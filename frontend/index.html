@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trustless Trading Agent - Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0e17;color:#e1e5ee;min-height:100vh}
+.header{background:linear-gradient(135deg,#0f1724,#1a2332);border-bottom:1px solid #1e2d3d;padding:20px 40px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:24px;background:linear-gradient(90deg,#00d4aa,#0099ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .agent-id{font-size:12px;color:#5a6e82;font-family:monospace}
+.status-badge{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600}
+.status-active{background:#00d4aa20;color:#00d4aa;border:1px solid #00d4aa40}
+.status-idle{background:#f5a62320;color:#f5a623;border:1px solid #f5a62340}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:30px 40px}
+.card{background:#111827;border:1px solid #1e2d3d;border-radius:16px;padding:24px}
+.card h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#5a6e82;margin-bottom:12px}
+.card .value{font-size:36px;font-weight:700}
+.card .sub{font-size:13px;color:#5a6e82;margin-top:4px}
+.trust-score{text-align:center}
+.trust-circle{width:120px;height:120px;border-radius:50%;border:4px solid #00d4aa;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:42px;font-weight:800;color:#00d4aa;background:#00d4aa10}
+.section{padding:0 40px 30px}
+.section h2{font-size:18px;margin-bottom:16px;color:#8899aa}
+.trade-table{width:100%;border-collapse:collapse}
+.trade-table th{text-align:left;padding:12px 16px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#5a6e82;border-bottom:1px solid #1e2d3d}
+.trade-table td{padding:12px 16px;border-bottom:1px solid #1e2d3d10;font-size:14px}
+.action-buy{color:#00d4aa;font-weight:600}
+.action-sell{color:#ff4757;font-weight:600}
+.action-hold{color:#f5a623;font-weight:600}
+.btn{padding:12px 28px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.btn-primary{background:linear-gradient(135deg,#00d4aa,#0099ff);color:#fff}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.controls{padding:10px 40px 20px;display:flex;gap:12px;align-items:center}
+.erc-badge{display:inline-flex;align-items:center;gap:6px;background:#7c3aed20;color:#a78bfa;padding:4px 12px;border-radius:8px;font-size:11px;font-weight:600;border:1px solid #7c3aed30}
+.chain-badge{background:#f97316 20;color:#fb923c;padding:4px 12px;border-radius:8px;font-size:11px;border:1px solid #f9731630}
+.reasoning-box{background:#0f1724;border:1px solid #1e2d3d;border-radius:12px;padding:16px;margin-top:12px;font-size:13px;line-height:1.6;color:#8899aa}
+.sig{font-family:monospace;font-size:11px;color:#5a6e82;word-break:break-all}
+.pnl-pos{color:#00d4aa}
+.pnl-neg{color:#ff4757}
+.footer{text-align:center;padding:30px;color:#3a4a5c;font-size:12px;border-top:1px solid #1e2d3d}
+</style>
+</head>
+<body>
+<div class="header">
+<div>
+<h1>Trustless Trading Agent</h1>
+<div class="agent-id" id="agentId">AgentId: Loading...</div>
+<div style="margin-top:6px;display:flex;gap:8px">
+<span class="erc-badge">ERC-8004 Verified</span>
+<span class="chain-badge">Base Sepolia</span>
+</div>
+</div>
+<div style="text-align:right">
+<span class="status-badge status-idle" id="statusBadge">IDLE</span>
+<div style="margin-top:8px;font-size:11px;color:#5a6e82">Powered by PRISM + Kraken CLI</div>
+</div>
+</div>
+
+<div class="controls">
+<button class="btn btn-primary" onclick="runTrade('BTC')">Run BTC Trade Cycle</button>
+<button class="btn btn-primary" onclick="runTrade('ETH')">Run ETH Trade Cycle</button>
+<button class="btn" style="background:#1e2d3d;color:#8899aa" onclick="refreshAll()">Refresh Data</button>
+<span style="font-size:12px;color:#5a6e82;margin-left:auto" id="lastUpdate">Last update: --</span>
+</div>
+
+<div class="grid">
+<div class="card trust-score">
+<h3>Trust Score</h3>
+<div class="trust-circle" id="trustScore">50</div>
+<div class="sub">On-Chain Verified</div>
+</div>
+<div class="card">
+<h3>Total Trades</h3>
+<div class="value" id="totalTrades">0</div>
+<div class="sub">Autonomous executions</div>
+</div>
+<div class="card">
+<h3>Win Rate</h3>
+<div class="value" id="winRate">0%</div>
+<div class="sub" id="winLoss">W: 0 / L: 0</div>
+</div>
+<div class="card">
+<h3>Total P&L</h3>
+<div class="value" id="pnl">$0.00</div>
+<div class="sub">Paper trading mode</div>
+</div>
+</div>
+
+<div class="section">
+<h2>Latest AI Reasoning</h2>
+<div class="reasoning-box" id="reasoning">No trades executed yet. Click "Run Trade Cycle" to start the autonomous agent.</div>
+</div>
+
+<div class="section">
+<h2>Trade History</h2>
+<table class="trade-table">
+<thead><tr><th>#</th><th>Symbol</th><th>Action</th><th>Confidence</th><th>Risk</th><th>Signature</th><th>Time</th></tr></thead>
+<tbody id="tradeBody"><tr><td colspan="7" style="text-align:center;color:#5a6e82;padding:40px">No trades yet. Start the agent to see autonomous trading in action.</td></tr></tbody>
+</table>
+</div>
+
+<div class="footer">
+Trustless Trading Agent | ERC-8004 Compliant | PRISM API + Kraken CLI + On-Chain Identity<br>
+Built for AI Trading Agents Hackathon 2026 by Team ANDS Network
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://trustless-agent-api.onrender.com';
+
+async function refreshAll() {
+  try {
+    const [agentRes, tradesRes, repRes] = await Promise.all([
+      fetch(API + '/api/agent').then(r => r.json()).catch(() => null),
+      fetch(API + '/api/trades').then(r => r.json()).catch(() => null),
+      fetch(API + '/api/reputation').then(r => r.json()).catch(() => null)
+    ]);
+    if (agentRes) updateAgent(agentRes);
+    if (tradesRes) updateTrades(tradesRes);
+    if (repRes) updateReputation(repRes);
+    document.getElementById('lastUpdate').textContent = 'Last update: ' + new Date().toLocaleTimeString();
+  } catch(e) { console.log('API not connected yet:', e); }
+}
+
+function updateAgent(data) {
+  document.getElementById('agentId').textContent = 'AgentId: ' + (data.agent_id || 'Not set');
+  const badge = document.getElementById('statusBadge');
+  badge.textContent = data.state?.status?.toUpperCase() || 'IDLE';
+  badge.className = 'status-badge ' + (data.state?.status === 'active' ? 'status-active' : 'status-idle');
+  if (data.state?.last_reasoning) {
+    document.getElementById('reasoning').textContent = data.state.last_reasoning;
+  }
+}
+
+function updateTrades(data) {
+  const tbody = document.getElementById('tradeBody');
+  if (!data.trades || data.trades.length === 0) return;
+  tbody.innerHTML = data.trades.reverse().map(t => {
+    const action = t.decision?.action || 'HOLD';
+    const cls = action === 'BUY' ? 'action-buy' : action === 'SELL' ? 'action-sell' : 'action-hold';
+    return `<tr>
+      <td>${t.id}</td>
+      <td>${t.symbol}</td>
+      <td class="${cls}">${action}</td>
+      <td>${((t.decision?.confidence || 0) * 100).toFixed(0)}%</td>
+      <td>${t.decision?.risk_level || 'N/A'}</td>
+      <td class="sig">${(t.signed?.signature || '').substring(0, 20)}...</td>
+      <td>${new Date(t.timestamp).toLocaleTimeString()}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateReputation(data) {
+  document.getElementById('trustScore').textContent = Math.round(data.trust_score || 50);
+  document.getElementById('totalTrades').textContent = data.total_trades || 0;
+  document.getElementById('winRate').textContent = (data.win_rate || 0) + '%';
+  const pnl = data.pnl || 0;
+  const pnlEl = document.getElementById('pnl');
+  pnlEl.textContent = '$' + pnl.toFixed(2);
+  pnlEl.className = 'value ' + (pnl >= 0 ? 'pnl-pos' : 'pnl-neg');
+}
+
+async function runTrade(symbol) {
+  try {
+    const res = await fetch(API + '/api/trade/' + symbol, {method: 'POST'});
+    const data = await res.json();
+    await refreshAll();
+  } catch(e) {
+    document.getElementById('reasoning').textContent = 'Demo Mode: API not connected. Deploy backend to see live trades.';
+  }
+}
+
+refreshAll();
+setInterval(refreshAll, 15000);
+</script>
+</body>
+</html>
