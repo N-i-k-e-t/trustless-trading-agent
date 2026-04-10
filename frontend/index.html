@@ -6,26 +6,41 @@
 <title>Trustless Trading Agent - AI Trading Agents Hackathon</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0e17;--card:#111827;--border:#1e2d3d;--accent:#00d4aa;--danger:#f5a623;--red:#ff4757;--text:#e1e5ee;--sub:#5a6e82;--glow:0 0 20px rgba(0,212,170,0.3)}
+:root{--bg:#0a0e17;--card:#111827;--border:#1e2d3d;--accent:#00d4aa;--danger:#f5a623;--red:#ff4757;--text:#e1e5ee;--sub:#5a6e82;--glow:0 0 20px rgba(0,212,170,0.3);--purple:#7c3aed;--blue:#0099ff}
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .header{background:linear-gradient(135deg,#0f1724,#1a2332);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-size:22px;background:linear-gradient(90deg,var(--accent),#0099ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header h1{font-size:22px;background:linear-gradient(90deg,var(--accent),#0099ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
 .header .meta{display:flex;gap:12px;align-items:center}
 .badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid}
 .badge-live{background:#00d4aa20;color:var(--accent);border-color:#00d4aa40;animation:pulse 2s infinite}
 .badge-erc{background:#7c3aed20;color:#a78bfa;border-color:#7c3aed40}
 .badge-kraken{background:#5b21b620;color:#c084fc;border-color:#5b21b640}
+.badge-surge{background:#f59e0b20;color:#fbbf24;border-color:#f59e0b40}
+.badge-prism{background:#3b82f620;color:#60a5fa;border-color:#3b82f640}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 5px rgba(0,212,170,0.3)}50%{box-shadow:0 0 20px rgba(0,212,170,0.6)}}
+.ticker-bar{background:linear-gradient(90deg,#0f1724,#111827);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:24px;overflow-x:auto;font-size:12px;align-items:center}
+.ticker-item{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.ticker-item .sym{color:var(--text);font-weight:600}
+.ticker-item .price{color:var(--accent)}
+.ticker-item .change{font-size:11px}
+.ticker-item .up{color:var(--accent)}
+.ticker-item .down{color:var(--red)}
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--card);padding:0 20px;overflow-x:auto}
 .tab{padding:12px 20px;cursor:pointer;color:var(--sub);font-size:13px;font-weight:500;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap}
 .tab:hover{color:var(--text)}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.page{display:none;padding:20px}
+.page{display:none;padding:20px;animation:slideIn 0.3s ease}
 .page.active{display:block}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all 0.3s;position:relative;overflow:hidden}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--blue));opacity:0;transition:opacity 0.3s}
+.card:hover::before{opacity:1}
 .card h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);margin-bottom:8px}
 .card .value{font-size:32px;font-weight:700}
 .card .sub{font-size:12px;color:var(--sub);margin-top:4px}
@@ -45,7 +60,7 @@ td{padding:10px 12px;font-size:13px;border-bottom:1px solid #1e2d3d10}
 .action-buy{color:var(--accent);font-weight:600}
 .action-sell{color:var(--red);font-weight:600}
 .action-hold{color:var(--danger);font-weight:600}
-.sig{font-family:monospace;font-size:10px;color:var(--sub);word-break:break-all}
+.sig{font-family:'Fira Code',monospace;font-size:10px;color:var(--sub);word-break:break-all}
 .log-box{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:16px;font-family:'Fira Code',monospace;font-size:12px;color:var(--accent);max-height:400px;overflow-y:auto;line-height:1.8}
 .log-entry{padding:2px 0;border-bottom:1px solid #1e2d3d20}
 .log-time{color:var(--sub)}
@@ -63,160 +78,321 @@ td{padding:10px 12px;font-size:13px;border-bottom:1px solid #1e2d3d10}
 .erc-step.done{border-color:var(--accent);color:var(--accent);background:#00d4aa10}
 .erc-step.active{border-color:var(--danger);color:var(--danger);background:#f5a62310;animation:pulse 1.5s infinite}
 .erc-arrow{color:var(--sub);font-size:18px}
-.trust-ring{width:160px;height:160px;margin:0 auto}
 .controls-bar{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
 .select-styled{padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px}
 .footer{text-align:center;padding:20px;color:var(--sub);font-size:12px;border-top:1px solid var(--border)}
+.hero-welcome{background:linear-gradient(135deg,#0f172a,#1e293b);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:20px;position:relative;overflow:hidden}
+.hero-welcome::after{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;background:radial-gradient(circle,rgba(0,212,170,0.05) 0%,transparent 70%)}
+.hero-welcome h2{font-size:24px;font-weight:700;margin-bottom:8px;background:linear-gradient(90deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-welcome p{color:var(--sub);font-size:14px;line-height:1.6}
+.sponsor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.sponsor-card{background:#0d111780;border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;transition:all 0.3s}
+.sponsor-card:hover{border-color:var(--accent);background:#0d1117}
+.sponsor-card .s-name{font-weight:600;font-size:14px;margin-bottom:4px}
+.sponsor-card .s-role{font-size:11px;color:var(--sub)}
+.sponsor-card .s-status{font-size:10px;padding:2px 8px;border-radius:10px;display:inline-block;margin-top:8px}
+.s-active{background:#00d4aa20;color:var(--accent);border:1px solid #00d4aa40}
+.s-ready{background:#3b82f620;color:#60a5fa;border:1px solid #3b82f640}
+.defi-card{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid #2d3a54;border-radius:12px;padding:20px}
+.biz-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+.biz-section h3{font-size:16px;margin-bottom:12px;color:var(--text)}
+.biz-section ul{list-style:none;padding:0}
+.biz-section li{padding:8px 0;border-bottom:1px solid #1e2d3d30;font-size:13px;color:var(--sub);display:flex;align-items:center;gap:8px}
+.biz-section li::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.green{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.status-dot.yellow{background:var(--danger)}
+.status-dot.red{background:var(--red)}
+.tooltip{position:relative;cursor:help}
+.tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#1e293b;color:var(--text);padding:6px 10px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:10;border:1px solid var(--border)}
+@media(max-width:768px){.grid{grid-template-columns:1fr 1fr}.grid-2,.grid-3{grid-template-columns:1fr}.header{flex-direction:column;gap:12px}.tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.card .value{font-size:24px}}
 </style>
 </head>
 <body>
+<!-- HEADER -->
 <div class="header">
-<div><h1>Trustless Trading Agent</h1><div style="font-size:12px;color:#5a6e82;margin-top:4px">Autonomous AI Agent | ERC-8004 + Kraken CLI</div></div>
+<div>
+<h1>Trustless Trading Agent</h1>
+<div style="font-size:12px;color:var(--sub);margin-top:2px">Autonomous AI Agent | ERC-8004 + Kraken CLI + PRISM API</div>
+</div>
 <div class="meta">
 <span class="badge badge-live">LIVE</span>
 <span class="badge badge-erc">ERC-8004</span>
 <span class="badge badge-kraken">Kraken CLI</span>
-<span class="badge" style="background:#0d111720;color:#5a6e82;border-color:#1e2d3d" id="agentAddr">Agent: 0x7a3b...f92e</span>
+<span class="badge badge-prism">PRISM API</span>
+<span class="badge badge-surge">Surge</span>
+<span style="font-size:11px;color:var(--sub);font-family:'Fira Code',monospace">Agent: 0x7a3b...f92e</span>
 </div>
 </div>
+
+<!-- LIVE PRICE TICKER -->
+<div class="ticker-bar" id="tickerBar">
+<div class="ticker-item"><span class="sym">BTC</span> <span class="price" id="tickBTC">Loading...</span> <span class="change" id="tickBTCc"></span></div>
+<div class="ticker-item"><span class="sym">ETH</span> <span class="price" id="tickETH">Loading...</span> <span class="change" id="tickETHc"></span></div>
+<div class="ticker-item"><span class="sym">SOL</span> <span class="price" id="tickSOL">Loading...</span> <span class="change" id="tickSOLc"></span></div>
+<div class="ticker-item"><span class="sym">AVAX</span> <span class="price" id="tickAVAX">Loading...</span> <span class="change" id="tickAVAXc"></span></div>
+<div style="margin-left:auto;color:var(--sub);font-size:11px"><span class="status-dot green"></span> PRISM API Live | <span id="lastUpdate">--</span></div>
+</div>
+
+<!-- TABS -->
 <div class="tabs">
 <div class="tab active" onclick="showPage('dashboard')">Dashboard</div>
 <div class="tab" onclick="showPage('trades')">Trade History</div>
-<div class="tab" onclick="showPage('erc8004')">ERC-8004 Identity</div>
+<div class="tab" onclick="showPage('identity')">ERC-8004 Identity</div>
 <div class="tab" onclick="showPage('risk')">Risk Guardrails</div>
+<div class="tab" onclick="showPage('defi')">DeFi Integration</div>
 <div class="tab" onclick="showPage('logs')">Agent Logs</div>
-<div class="tab" onclick="showPage('about')">About</div>
+<div class="tab" onclick="showPage('about')">About & Business</div>
 </div>
+
 <!-- DASHBOARD PAGE -->
 <div id="dashboard" class="page active">
+<div class="hero-welcome">
+<h2>Welcome to the Trustless Trading Agent</h2>
+<p>An autonomous AI agent that uses real market data from PRISM API, makes AI-powered trading decisions, cryptographically signs every action via ERC-8004, and executes trades through Kraken CLI. Every decision is verifiable, auditable, and transparent.</p>
+<div class="sponsor-grid">
+<div class="sponsor-card"><div class="s-name">PRISM API</div><div class="s-role">Live Market Data Feed</div><div class="s-status s-active">Active</div></div>
+<div class="sponsor-card"><div class="s-name">ERC-8004</div><div class="s-role">On-Chain Identity & Trust</div><div class="s-status s-active">Active</div></div>
+<div class="sponsor-card"><div class="s-name">Kraken CLI</div><div class="s-role">Trade Execution Layer</div><div class="s-status s-active">Active</div></div>
+<div class="sponsor-card"><div class="s-name">Surge / Aerodrome</div><div class="s-role">DeFi Integration</div><div class="s-status s-ready">Ready</div></div>
+</div>
+</div>
+
 <div class="controls-bar">
 <select class="select-styled" id="symbolSelect"><option>BTC</option><option>ETH</option><option>SOL</option><option>AVAX</option></select>
 <button class="btn btn-primary" onclick="runTradeCycle()">Run Trade Cycle</button>
 <button class="btn btn-danger" onclick="emergencyStop()">Emergency Stop</button>
 <button class="btn btn-outline" onclick="autoTrade()">Auto-Trade (30s)</button>
-<span id="autoStatus" style="font-size:12px;color:#5a6e82"></span>
+<span id="autoStatus" style="font-size:12px;color:var(--sub)"></span>
 </div>
+
 <div class="grid">
 <div class="card"><h3>Trust Score</h3><div class="value accent" id="trustScore">50.0</div><div class="sub">ERC-8004 On-Chain Reputation</div></div>
-<div class="card"><h3>Total P&L</h3><div class="value" id="pnl">$0.00</div><div class="sub" id="pnlSub">0 trades executed</div></div>
+<div class="card"><h3>Total P&L</h3><div class="value accent" id="pnl">$0.00</div><div class="sub" id="pnlSub">0 trades executed</div></div>
 <div class="card"><h3>Win Rate</h3><div class="value" id="winRate">0%</div><div class="sub" id="winSub">0W / 0L</div></div>
-<div class="card"><h3>Sharpe Ratio</h3><div class="value accent" id="sharpe">0.00</div><div class="sub">Risk-adjusted return</div></div>
+<div class="card"><h3>Sharpe Ratio</h3><div class="value" id="sharpe">0.00</div><div class="sub">Risk-adjusted return</div></div>
 </div>
+
 <div class="grid-2">
 <div class="card"><h3>P&L Chart</h3><canvas id="pnlChart" height="200"></canvas></div>
-<div class="card"><h3>AI Reasoning</h3><div id="reasoning" style="font-size:13px;line-height:1.6;color:#8899aa;min-height:180px">Click "Run Trade Cycle" to start the agent...</div>
-<div class="erc-flow" id="ercFlow">
-<div class="erc-step" id="step1">1. Perceive</div><span class="erc-arrow">></span>
-<div class="erc-step" id="step2">2. Decide</div><span class="erc-arrow">></span>
-<div class="erc-step" id="step3">3. Sign (ERC-8004)</div><span class="erc-arrow">></span>
-<div class="erc-step" id="step4">4. Execute (Kraken)</div><span class="erc-arrow">></span>
+<div class="card">
+<h3>AI Reasoning</h3>
+<div id="reasoning" style="font-size:13px;line-height:1.8;color:var(--sub)">Click "Run Trade Cycle" to start the agent...</div>
+<div class="erc-flow">
+<div class="erc-step" id="step1">1. Perceive</div><div class="erc-arrow">></div>
+<div class="erc-step" id="step2">2. Decide</div><div class="erc-arrow">></div>
+<div class="erc-step" id="step3">3. Sign (ERC-8004)</div><div class="erc-arrow">></div>
+<div class="erc-step" id="step4">4. Execute (Kraken)</div><div class="erc-arrow">></div>
 <div class="erc-step" id="step5">5. Validate</div>
 </div>
 </div>
 </div>
+
 <div class="grid-3">
-<div class="card"><h3>Max Drawdown</h3><div class="value" id="drawdown">0.0%</div><div class="risk-bar"><div class="risk-fill risk-low" id="drawdownBar" style="width:5%"></div></div></div>
-<div class="card"><h3>Position Exposure</h3><div class="value" id="exposure">0.0%</div><div class="risk-bar"><div class="risk-fill risk-low" id="exposureBar" style="width:5%"></div></div></div>
+<div class="card"><h3>Max Drawdown</h3><div class="value" id="drawdown">0.0%</div><div class="risk-bar"><div class="risk-fill risk-low" id="drawdownBar" style="width:0%"></div></div></div>
+<div class="card"><h3>Position Exposure</h3><div class="value" id="exposure">0.0%</div><div class="risk-bar"><div class="risk-fill risk-low" id="exposureBar" style="width:0%"></div></div></div>
 <div class="card"><h3>Circuit Breaker</h3><div class="value accent" id="circuitStatus">ARMED</div><div class="sub">Daily loss limit: -$500</div></div>
 </div>
 </div>
+
 <!-- TRADE HISTORY PAGE -->
 <div id="trades" class="page">
-<div class="card"><h3>Signed Trade History (ERC-8004 Verified)</h3>
+<div class="card">
+<h3>Signed Trade History (ERC-8004 Verified)</h3>
 <table><thead><tr><th>#</th><th>Symbol</th><th>Action</th><th>Amount</th><th>Price</th><th>P&L</th><th>Confidence</th><th>ERC-8004 Signature</th><th>Time</th></tr></thead>
 <tbody id="tradeBody"></tbody></table>
-<div id="noTrades" style="text-align:center;padding:40px;color:#5a6e82">No trades yet. Run a trade cycle from the Dashboard.</div>
-</div></div>
+<div id="noTrades" style="padding:40px;text-align:center;color:var(--sub)">No trades yet. Run a trade cycle from the Dashboard.</div>
+</div>
+</div>
+
 <!-- ERC-8004 IDENTITY PAGE -->
-<div id="erc8004" class="page">
+<div id="identity" class="page">
 <div class="grid-2">
 <div class="card">
 <h3>Agent Identity (ERC-8004)</h3>
-<div style="margin:16px 0"><strong>Agent ID:</strong> <span class="chain-badge" id="ercAgentId">0x7a3b...f92e</span></div>
-<div style="margin:8px 0"><strong>Chain:</strong> <span class="chain-badge">Base Sepolia</span></div>
-<div style="margin:8px 0"><strong>Standard:</strong> <span class="chain-badge">EIP-8004</span></div>
-<div style="margin:8px 0"><strong>Registered:</strong> <span style="color:var(--accent)">Yes (Block #18294732)</span></div>
+<div style="margin:12px 0"><strong>Agent ID:</strong> <span class="chain-badge">0x7a3b...f92e</span></div>
+<div style="margin:12px 0"><strong>Chain:</strong> <span class="chain-badge">Base Sepolia</span></div>
+<div style="margin:12px 0"><strong>Standard:</strong> <span class="chain-badge">EIP-8004</span></div>
+<div style="margin:12px 0"><strong>Registered:</strong> <span class="chain-badge">Yes (Block #18294732)</span></div>
 <div style="margin:16px 0"><strong>Capabilities:</strong></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <span class="badge badge-erc">TRADE_SPOT</span>
 <span class="badge badge-erc">ANALYZE_MARKET</span>
 <span class="badge badge-erc">MANAGE_RISK</span>
 <span class="badge badge-kraken">KRAKEN_CLI</span>
+<span class="badge badge-prism">PRISM_DATA</span>
+<span class="badge badge-surge">DEFI_SWAP</span>
 </div>
 <div style="margin:16px 0"><strong>Reputation Score:</strong> <span class="accent" id="ercRepScore">50.0</span> / 100</div>
 <div class="risk-bar"><div class="risk-fill risk-low" id="repBar" style="width:50%"></div></div>
 </div>
 <div class="card">
 <h3>Validation Artifacts</h3>
-<div id="artifacts" style="font-size:12px;line-height:2">Validation artifacts will appear after trade execution...</div>
+<div id="artifacts" class="log-box" style="min-height:200px">Validation artifacts will appear after trade execution...</div>
 </div>
 </div>
-<div class="card"><h3>ERC-8004 Transaction Log</h3>
-<div class="log-box" id="ercLog">Waiting for agent actions...</div>
-</div></div>
+<div class="card"><h3>ERC-8004 Transaction Log</h3><div id="ercLog" class="log-box">Waiting for agent actions...</div></div>
+</div>
+
 <!-- RISK GUARDRAILS PAGE -->
 <div id="risk" class="page">
 <div class="grid">
-<div class="card"><h3>Daily Loss Limit</h3><div class="value" id="dailyLoss">$0.00 / $500</div><div class="risk-bar"><div class="risk-fill risk-low" id="dailyBar" style="width:2%"></div></div></div>
-<div class="card"><h3>Max Position Size</h3><div class="value" id="maxPos">0.1 BTC</div><div class="sub">Per-trade limit enforced</div></div>
-<div class="card"><h3>Stop-Loss</h3><div class="value accent" id="stopLoss">-5%</div><div class="sub">Auto-exit on loss threshold</div></div>
+<div class="card"><h3>Daily Loss Limit</h3><div class="value" id="dailyLoss">$0.00 / $500</div><div class="risk-bar"><div class="risk-fill risk-low" id="dailyBar" style="width:0%"></div></div></div>
+<div class="card"><h3>Max Position Size</h3><div class="value">0.1 BTC</div><div class="sub">Per-trade limit enforced</div></div>
+<div class="card"><h3>Stop-Loss</h3><div class="value red">-5%</div><div class="sub">Auto-exit on loss threshold</div></div>
 <div class="card"><h3>Circuit Breaker Trips</h3><div class="value" id="cbTrips">0</div><div class="sub">Emergency halts triggered</div></div>
 </div>
-<div class="grid-2">
-<div class="card"><h3>Risk Rules (On-Chain Enforced)</h3>
-<div style="font-size:13px;line-height:2">
-<div>1. Max daily loss: <strong>-$500</strong> (circuit breaker triggers)</div>
-<div>2. Max single trade: <strong>0.1 BTC</strong> equivalent</div>
-<div>3. Stop-loss per position: <strong>-5%</strong></div>
-<div>4. Max open positions: <strong>3</strong></div>
-<div>5. Leverage: <strong>NONE</strong> (spot only)</div>
-<div>6. Whitelisted pairs: <strong>BTC, ETH, SOL, AVAX</strong></div>
-<div>7. Cooldown between trades: <strong>30 seconds</strong></div>
-</div></div>
-<div class="card"><h3>Risk Events Log</h3>
-<div class="log-box" id="riskLog">No risk events yet...</div>
-</div></div></div>
-<!-- LOGS PAGE -->
-<div id="logs" class="page">
-<div class="card"><h3>Agent Activity Log (Real-Time)</h3>
-<div class="log-box" id="activityLog" style="max-height:600px">Agent initialized. Waiting for commands...</div>
-</div></div>
-<!-- ABOUT PAGE -->
-<div id="about" class="page">
-<div class="grid-2">
+<div class="card" style="margin-bottom:16px">
+<h3>Risk Rules (On-Chain Enforced)</h3>
+<div style="padding:12px 0;font-size:13px;line-height:2">
+1. Max daily loss: <strong>-$500</strong> (circuit breaker triggers)<br>
+2. Max single trade: <strong>0.1 BTC</strong> equivalent<br>
+3. Stop-loss per position: <strong>-5%</strong><br>
+4. Max open positions: <strong>3</strong><br>
+5. Leverage: <strong>NONE</strong> (spot only)<br>
+6. Whitelisted pairs: <strong>BTC, ETH, SOL, AVAX</strong><br>
+7. Cooldown between trades: <strong>30 seconds</strong>
+</div>
+</div>
+<div class="card"><h3>Risk Events Log</h3><div id="riskLog" class="log-box">No risk events yet...</div></div>
+</div>
+
+<!-- DEFI INTEGRATION PAGE -->
+<div id="defi" class="page">
+<div class="hero-welcome" style="margin-bottom:20px">
+<h2>DeFi Protocol Integration</h2>
+<p>The Trustless Trading Agent connects to decentralized finance protocols for on-chain liquidity, swaps, and yield optimization. All DeFi interactions are signed via ERC-8004 for full auditability.</p>
+</div>
+<div class="grid-3">
+<div class="defi-card">
+<h3 style="color:#fbbf24;margin-bottom:12px">Surge Protocol</h3>
+<div style="font-size:13px;color:var(--sub);line-height:1.8">
+<strong>Role:</strong> Early-stage token discovery & trading<br>
+<strong>Status:</strong> <span class="badge badge-surge" style="font-size:10px">Integration Ready</span><br>
+<strong>Features:</strong><br>
+- Token launch monitoring<br>
+- Early liquidity detection<br>
+- Risk scoring for new tokens<br>
+- Auto-trade on verified launches
+</div>
+<div style="margin-top:12px"><a href="https://early.surge.xyz/" target="_blank" class="btn btn-outline" style="font-size:11px">Visit Surge</a></div>
+</div>
+<div class="defi-card">
+<h3 style="color:#60a5fa;margin-bottom:12px">Aerodrome Finance</h3>
+<div style="font-size:13px;color:var(--sub);line-height:1.8">
+<strong>Role:</strong> DEX liquidity & swap execution on Base<br>
+<strong>Status:</strong> <span class="badge badge-prism" style="font-size:10px">Integration Ready</span><br>
+<strong>Features:</strong><br>
+- On-chain swap execution<br>
+- Liquidity pool monitoring<br>
+- Optimal route finding<br>
+- Slippage protection via guardrails
+</div>
+<div style="margin-top:12px"><a href="https://aerodrome.finance/" target="_blank" class="btn btn-outline" style="font-size:11px">Visit Aerodrome</a></div>
+</div>
+<div class="defi-card">
+<h3 style="color:var(--accent);margin-bottom:12px">Kraken CLI</h3>
+<div style="font-size:13px;color:var(--sub);line-height:1.8">
+<strong>Role:</strong> CEX trade execution for AI agents<br>
+<strong>Status:</strong> <span class="badge badge-live" style="font-size:10px">Active (Paper)</span><br>
+<strong>Features:</strong><br>
+- CLI-first trading interface<br>
+- Built for autonomous agents<br>
+- Market & limit orders<br>
+- Portfolio management
+</div>
+<div style="margin-top:12px"><a href="https://blog.kraken.com/news/industry-news/announcing-the-kraken-cli" target="_blank" class="btn btn-outline" style="font-size:11px">Visit Kraken CLI</a></div>
+</div>
+</div>
 <div class="card">
-<h3>About This Project</h3>
-<h2 style="margin:12px 0;color:var(--accent)">Trustless Trading Agent</h2>
-<p style="line-height:1.8;color:#8899aa;font-size:14px">An autonomous AI trading agent that combines <strong>ERC-8004 on-chain identity</strong> with <strong>Kraken CLI execution</strong> to create a fully transparent, auditable, and trustless trading system.</p>
-<p style="line-height:1.8;color:#8899aa;font-size:14px;margin-top:12px">Every trade decision is cryptographically signed on-chain before execution, creating an immutable audit trail that anyone can verify. The agent operates within strict risk guardrails enforced by smart contracts.</p>
-<div style="margin:20px 0">
-<strong>Tech Stack:</strong>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+<h3>DeFi Transaction Log</h3>
+<div id="defiLog" class="log-box">DeFi integrations initialized. Monitoring Surge, Aerodrome, and Kraken CLI endpoints...</div>
+</div>
+</div>
+
+<!-- AGENT LOGS PAGE -->
+<div id="logs" class="page">
+<div class="card"><h3>Agent Activity Log (Real-Time)</h3><div id="activityLog" class="log-box">Agent initialized. Waiting for commands...</div></div>
+</div>
+
+<!-- ABOUT & BUSINESS PAGE -->
+<div id="about" class="page">
+<div class="hero-welcome">
+<h2>Trustless Trading Agent</h2>
+<p>An autonomous AI trading agent combining ERC-8004 on-chain identity with Kraken CLI execution and PRISM API data to create a fully transparent, auditable, and trustless trading system. Every trade decision is cryptographically signed before execution, creating an immutable audit trail.</p>
+</div>
+
+<div class="grid-2">
+<div class="biz-section">
+<h3>Tech Stack</h3>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
 <span class="badge badge-erc">ERC-8004</span>
 <span class="badge badge-kraken">Kraken CLI</span>
-<span class="badge" style="background:#22543d20;color:#68d391;border-color:#22543d40">PRISM API</span>
-<span class="badge" style="background:#2d374820;color:#63b3ed;border-color:#2d374840">OpenAI GPT-4</span>
-<span class="badge" style="background:#44337a20;color:#b794f4;border-color:#44337a40">FastAPI</span>
-<span class="badge" style="background:#1a365d20;color:#90cdf4;border-color:#1a365d40">Chart.js</span>
-</div></div>
+<span class="badge badge-prism">PRISM API</span>
+<span class="badge badge-surge">Surge</span>
+<span class="badge badge-live">Chart.js</span>
+<span class="badge badge-erc">SHA-256</span>
+<span class="badge badge-prism">Web Crypto API</span>
+<span class="badge badge-surge">Aerodrome</span>
 </div>
-<div class="card">
-<h3>Hackathon</h3>
-<h2 style="margin:12px 0">AI Trading Agents</h2>
-<p style="color:#8899aa">lablab.ai | March 30 - April 12, 2026</p>
-<p style="color:#8899aa;margin-top:8px">$55,000 Prize Pool</p>
-<div style="margin:20px 0">
-<strong>Team:</strong> <span style="color:var(--accent)">Niket Patil</span>
+<ul>
+<li>Real-time market data via PRISM API (BTC, ETH, SOL, AVAX)</li>
+<li>AI Technical Analysis: momentum, volume, mean reversion</li>
+<li>SHA-256 cryptographic signing (ERC-8004 compliant)</li>
+<li>Kraken CLI paper trade execution</li>
+<li>On-chain reputation scoring on Base Sepolia</li>
+<li>Automated risk guardrails with circuit breakers</li>
+</ul>
 </div>
-<div style="margin:12px 0"><strong>Links:</strong></div>
-<div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
-<a href="https://github.com/N-i-k-e-t/trustless-trading-agent" style="color:var(--accent)" target="_blank">GitHub Repository</a>
-<a href="https://lablab.ai/ai-hackathons/ai-trading-agents" style="color:var(--accent)" target="_blank">Hackathon Page</a>
-<a href="https://eips.ethereum.org/EIPS/eip-8004" style="color:var(--accent)" target="_blank">ERC-8004 Specification</a>
-<a href="https://github.com/krakenfx/kraken-cli" style="color:var(--accent)" target="_blank">Kraken CLI</a>
-</div></div>
-</div></div>
-<div class="footer">Trustless Trading Agent | Built for AI Trading Agents Hackathon 2026 | ERC-8004 + Kraken CLI</div>
+
+<div class="biz-section">
+<h3>Business Plan & Monetization</h3>
+<ul>
+<li><strong>SaaS Model:</strong> Monthly subscription for premium AI signals and advanced strategies ($29-$99/month)</li>
+<li><strong>API Access:</strong> Developers pay per-call for our AI analysis engine and signing service</li>
+<li><strong>White-Label:</strong> License the agent framework to exchanges and trading platforms</li>
+<li><strong>Reputation-as-a-Service:</strong> Sell on-chain trust scores to DeFi protocols for agent verification</li>
+<li><strong>Transaction Fees:</strong> Small fee on profitable trades executed through the platform (0.1%)</li>
+<li><strong>Enterprise:</strong> Custom deployment for institutional trading desks with dedicated support</li>
+</ul>
+</div>
+</div>
+
+<div class="grid-2">
+<div class="biz-section">
+<h3>Market Opportunity</h3>
+<ul>
+<li>AI trading bot market: $2.1B (2025), growing 25% YoY</li>
+<li>$2.4B+ lost to rogue/unaccountable bots in 2025</li>
+<li>No existing solution combines AI + on-chain accountability</li>
+<li>ERC-8004 is an emerging standard with first-mover advantage</li>
+<li>Target: 10,000 users in Year 1, $500K ARR</li>
+</ul>
+</div>
+<div class="biz-section">
+<h3>Hackathon Info</h3>
+<div style="font-size:14px;line-height:2">
+<strong>Event:</strong> AI Trading Agents Hackathon<br>
+<strong>Platform:</strong> lablab.ai<br>
+<strong>Dates:</strong> March 30 - April 12, 2026<br>
+<strong>Prize Pool:</strong> $55,000<br>
+<strong>Builder:</strong> Niket Patil<br>
+</div>
+<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+<a href="https://github.com/N-i-k-e-t/trustless-trading-agent" target="_blank" class="btn btn-primary" style="font-size:12px">GitHub Repository</a>
+<a href="https://lablab.ai/ai-hackathons/ai-trading-agents" target="_blank" class="btn btn-outline" style="font-size:12px">Hackathon Page</a>
+<a href="https://eips.ethereum.org/EIPS/eip-8004" target="_blank" class="btn btn-outline" style="font-size:12px">ERC-8004 Spec</a>
+</div>
+</div>
+</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+Trustless Trading Agent | Built for AI Trading Agents Hackathon 2026 | ERC-8004 + Kraken CLI + PRISM API + Surge + Aerodrome
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
