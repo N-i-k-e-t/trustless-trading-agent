@@ -174,20 +174,65 @@ td{padding:10px 12px;font-size:13px;border-bottom:1px solid #1e2d3d10}
 <div class="card"><h3>Sharpe Ratio</h3><div class="value" id="sharpe">0.00</div><div class="sub">Risk-adjusted return</div></div>
 </div>
 
-<div class="grid-2">
-<div class="card"><h3>P&L Chart</h3><canvas id="pnlChart" height="200"></canvas></div>
-<div class="card">
-<h3>AI Reasoning</h3>
-<div id="reasoning" style="font-size:13px;line-height:1.8;color:var(--sub)">Click "Run Trade Cycle" to start the agent...</div>
-<div class="erc-flow">
-<div class="erc-step" id="step1">1. Perceive</div><div class="erc-arrow">></div>
-<div class="erc-step" id="step2">2. Decide</div><div class="erc-arrow">></div>
-<div class="erc-step" id="step3">3. Sign (ERC-8004)</div><div class="erc-arrow">></div>
-<div class="erc-step" id="step4">4. Execute (Kraken)</div><div class="erc-arrow">></div>
-<div class="erc-step" id="step5">5. Validate</div>
-</div>
-</div>
-</div>
+    <!-- WHY TRUST THIS AGENT - Always visible -->
+    <div class="card" style="background:linear-gradient(135deg,#0f172a,#1a2332);border:1px solid #00d4aa30;margin-bottom:20px">
+      <h3 style="color:#00d4aa;font-size:14px;margin-bottom:12px">&#x1F6E1; Why Trust This Agent?</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+        <div>&#x2713; <b>Signed Trades</b> - Every decision cryptographically signed via EIP-712</div>
+        <div>&#x2713; <b>Risk Rules Enforced</b> - 6-point pre-trade risk check before every action</div>
+        <div>&#x2713; <b>Explainable AI</b> - Full reasoning: momentum, volume, mean reversion, PRISM</div>
+        <div>&#x2713; <b>On-Chain Identity</b> - ERC-8004 registered agent on Base Sepolia</div>
+        <div>&#x2713; <b>Verifiable Proof</b> - Intent hash + signature for every trade</div>
+        <div>&#x2713; <b>Trust Score</b> - Multi-factor: PnL quality, risk control, consistency</div>
+      </div>
+    </div>
+
+    <!-- DECISION INTELLIGENCE - 4 separate cards -->
+    <div class="grid-2">
+      <div class="card"><h3>P&L Chart</h3><canvas id="pnlChart" height="200"></canvas></div>
+      <div class="card" id="trustBreakdownCard">
+        <h3>&#x1F3AF; Trust Score Breakdown</h3>
+        <div id="trustBreakdown" style="font-size:13px">
+          <div style="margin-bottom:10px"><b style="font-size:24px;color:#00d4aa" id="trustScoreMain">50.0</b><span style="color:var(--sub)"> / 100</span></div>
+          <div style="margin-bottom:6px">PnL Quality <span style="float:right" id="tbPnl">50%</span><div class="risk-bar"><div class="risk-fill risk-low" id="tbPnlBar" style="width:50%"></div></div></div>
+          <div style="margin-bottom:6px">Risk Control <span style="float:right" id="tbRisk">100%</span><div class="risk-bar"><div class="risk-fill risk-low" id="tbRiskBar" style="width:100%"></div></div></div>
+          <div style="margin-bottom:6px">Consistency <span style="float:right" id="tbCons">50%</span><div class="risk-bar"><div class="risk-fill risk-med" id="tbConsBar" style="width:50%"></div></div></div>
+          <div style="margin-bottom:6px">Validation <span style="float:right" id="tbVal">10%</span><div class="risk-bar"><div class="risk-fill risk-high" id="tbValBar" style="width:10%"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
+      <!-- AI Reasoning Card -->
+      <div class="card" id="aiReasonCard">
+        <h3>&#x1F9E0; AI Reasoning</h3>
+        <div id="aiReasonContent" style="font-size:12px;line-height:1.6;color:var(--sub)">Run a trade cycle to see AI analysis...</div>
+      </div>
+      <!-- Risk Check Card -->
+      <div class="card" id="riskCheckCard">
+        <h3>&#x1F6E1; Risk Check</h3>
+        <div id="riskCheckContent" style="font-size:12px;line-height:1.6;color:var(--sub)">Awaiting trade cycle...</div>
+      </div>
+      <!-- Proof of Decision Card -->
+      <div class="card" id="proofCard">
+        <h3>&#x1F512; Proof of Decision</h3>
+        <div id="proofContent" style="font-size:12px;line-height:1.6;color:var(--sub)">No proof yet...</div>
+      </div>
+      <!-- Agent Pipeline Card -->
+      <div class="card">
+        <h3>&#x26A1; Agent Pipeline</h3>
+        <div class="erc-flow" style="flex-direction:column;align-items:flex-start;gap:6px;padding:8px;font-size:11px">
+          <div class="erc-step" id="step1">1. Perceive</div>
+          <div class="erc-step" id="step2">2. Decide</div>
+          <div class="erc-step" id="step3">3. Sign (ERC-8004)</div>
+          <div class="erc-step" id="step4">4. Execute (Kraken)</div>
+          <div class="erc-step" id="step5">5. Validate</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legacy reasoning div for JS compatibility -->
+    <div id="reasoning" style="display:none"></div>
 
 <div class="grid-3">
 <div class="card"><h3>Max Drawdown</h3><div class="value" id="drawdown">0.0%</div><div class="risk-bar"><div class="risk-fill risk-low" id="drawdownBar" style="width:0%"></div></div></div>
