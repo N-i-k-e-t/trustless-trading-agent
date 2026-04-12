@@ -158,3 +158,161 @@ log('Trustless Trading Agent v3.1 initialized');log('PRISM API: '+PRISM_BASE+' [
 eLog('Agent: 0x7a3b9c2d...6e7f8a9b');eLog('ERC-8004 | base-sepolia | ChainId: 84532');eLog('EIP-712 typed data signing: ACTIVE');eLog('Reputation: 50.0/100');
 rLog('Circuit breaker: ARMED -$500','success');rLog('Stop-loss: 5%','success');rLog('Max exposure: $10K','success');rLog('6-point pre-trade risk check: ACTIVE','success');
 dLog('DeFi monitoring: Surge, Aerodrome, Kraken CLI');
+
+// === NEW USER EXPERIENCE & SESSION TRACKING ===
+
+// Session tracking
+let sessionStart = Date.now();
+let sessionApiCalls = 0;
+let sessionSignatures = 0;
+let sessionRiskChecks = 0;
+let sessionErrors = 0;
+let feedbackList = JSON.parse(localStorage.getItem('feedbackList') || '[]');
+let feedbackRating = 0;
+
+// Session timer
+setInterval(function(){
+  let elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  let mins = Math.floor(elapsed / 60);
+  let secs = elapsed % 60;
+  let timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+  let st = document.getElementById('sessionTimer');
+  if(st) st.textContent = timeStr;
+  let ast = document.getElementById('adminSessionTime');
+  if(ast) ast.textContent = timeStr;
+}, 1000);
+
+// Inject session bar after tabs
+(function(){
+  let tabs = document.querySelector('.tabs');
+  if(tabs){
+    let sb = document.createElement('div');
+    sb.className = 'session-bar';
+    sb.innerHTML = '<div class="session-item"><span class="status-dot green"></span> Session Active | <span id="sessionTimer">0:00</span></div><div class="session-item">Trades: <span id="sessionTrades">0</span> | API: <span id="sessionApi">0</span> | Mode: Paper Trading</div>';
+    tabs.parentNode.insertBefore(sb, tabs.nextSibling);
+  }
+})();
+
+// Inject How It Works section in dashboard
+(function(){
+  let hero = document.querySelector('.hero-welcome');
+  if(hero){
+    let hiw = document.createElement('div');
+    hiw.className = 'card';
+    hiw.style.marginBottom = '20px';
+    hiw.innerHTML = '<h3>How It Works</h3><div class="how-it-works"><div class="how-step"><div class="step-icon">📡</div><div class="step-title">1. Live Data</div><div class="step-desc">PRISM API feeds real-time prices</div></div><div class="how-step"><div class="step-icon">🧠</div><div class="step-title">2. AI Analysis</div><div class="step-desc">Momentum, volume, mean reversion</div></div><div class="how-step"><div class="step-icon">🔐</div><div class="step-title">3. Sign (ERC-8004)</div><div class="step-desc">Cryptographic proof of intent</div></div><div class="how-step"><div class="step-icon">⚡</div><div class="step-title">4. Execute</div><div class="step-desc">Kraken CLI paper trading</div></div><div class="how-step"><div class="step-icon">✅</div><div class="step-title">5. Validate</div><div class="step-desc">On-chain audit trail</div></div></div>';
+    hero.parentNode.insertBefore(hiw, hero.nextSibling);
+  }
+})();
+
+// Inject Quick Start banner
+(function(){
+  let dashboard = document.getElementById('dashboard');
+  if(dashboard){
+    let qs = document.createElement('div');
+    qs.className = 'quick-start';
+    qs.id = 'quickStart';
+    qs.innerHTML = '<div class="qs-text"><strong>Quick Start:</strong> Select a token from the dropdown, click <strong>Run Trade Cycle</strong> to see the AI agent in action. Every decision is signed and verifiable.</div><button class="btn btn-outline" onclick="this.parentElement.style.display=\'none\'">Dismiss</button>';
+    let first = dashboard.querySelector('.hero-welcome');
+    if(first) dashboard.insertBefore(qs, first);
+  }
+})();
+
+// Onboarding modal
+function closeOnboarding(){
+  let m = document.getElementById('onboardingModal');
+  if(m) m.classList.add('hidden');
+  localStorage.setItem('onboarded', 'true');
+}
+
+(function(){
+  if(!localStorage.getItem('onboarded')){
+    let m = document.getElementById('onboardingModal');
+    if(m) m.classList.remove('hidden');
+  } else {
+    let m = document.getElementById('onboardingModal');
+    if(m) m.classList.add('hidden');
+  }
+})();
+
+// Feedback widget
+function toggleFeedback(){
+  let p = document.getElementById('feedbackPanel');
+  if(p) p.classList.toggle('hidden');
+}
+
+function setRating(n){
+  feedbackRating = n;
+  let stars = document.querySelectorAll('.rating-stars span');
+  stars.forEach(function(s, i){
+    s.textContent = i < n ? '\u2605' : '\u2606';
+    s.classList.toggle('active', i < n);
+  });
+}
+
+function submitFeedback(){
+  let type = document.getElementById('feedbackType').value;
+  let text = document.getElementById('feedbackText').value;
+  if(!text.trim()){ alert('Please enter feedback'); return; }
+  let fb = {type: type, rating: feedbackRating, text: text, time: new Date().toISOString()};
+  feedbackList.push(fb);
+  localStorage.setItem('feedbackList', JSON.stringify(feedbackList));
+  let status = document.getElementById('feedbackStatus');
+  if(status) status.textContent = 'Thank you! Feedback submitted.';
+  document.getElementById('feedbackText').value = '';
+  setRating(0);
+  updateFeedbackLog();
+  let afc = document.getElementById('adminFeedbackCount');
+  if(afc) afc.textContent = feedbackList.length;
+  setTimeout(function(){ toggleFeedback(); if(status) status.textContent = ''; }, 2000);
+}
+
+function updateFeedbackLog(){
+  let fl = document.getElementById('feedbackLog');
+  if(!fl) return;
+  if(feedbackList.length === 0){ fl.textContent = 'No feedback received yet...'; return; }
+  fl.innerHTML = '';
+  feedbackList.forEach(function(fb, i){
+    fl.innerHTML += '<div class="log-entry"><span class="log-time">[' + new Date(fb.time).toLocaleTimeString() + ']</span> <span class="log-warn">[' + fb.type.toUpperCase() + ']</span> ' + (fb.rating ? '\u2605'.repeat(fb.rating) + ' ' : '') + fb.text + '</div>';
+  });
+}
+
+// Update admin stats
+function updateAdminStats(){
+  let atc = document.getElementById('adminTradeCycles');
+  if(atc) atc.textContent = S.trades.length;
+  let aac = document.getElementById('adminApiCalls');
+  if(aac) aac.textContent = sessionApiCalls;
+  let as = document.getElementById('adminSignatures');
+  if(as) as.textContent = sessionSignatures;
+  let arc = document.getElementById('adminRiskChecks');
+  if(arc) arc.textContent = sessionRiskChecks;
+  let ae = document.getElementById('adminErrors');
+  if(ae) ae.textContent = sessionErrors;
+  let afc = document.getElementById('adminFeedbackCount');
+  if(afc) afc.textContent = feedbackList.length;
+  let st = document.getElementById('sessionTrades');
+  if(st) st.textContent = S.trades.length;
+  let sa = document.getElementById('sessionApi');
+  if(sa) sa.textContent = sessionApiCalls;
+}
+
+// Override fetch to track API calls
+const origFetch = window.fetch;
+window.fetch = function(){
+  sessionApiCalls++;
+  updateAdminStats();
+  return origFetch.apply(this, arguments);
+};
+
+// Track page views
+let pv = parseInt(localStorage.getItem('pageViews') || '0') + 1;
+localStorage.setItem('pageViews', pv);
+let apv = document.getElementById('adminPageViews');
+if(apv) apv.textContent = pv;
+
+// Init feedback log on load
+updateFeedbackLog();
+
+log('UI v4.0: Onboarding, Feedback, Admin Panel, Session Tracking loaded');
+
