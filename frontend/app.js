@@ -97,37 +97,38 @@ async function runTradeCycle() {
   let html='<div style="font-size:11px;line-height:1.6">';
   // 1. AI Reasoning with structured table
   html+='<div style="margin-bottom:8px"><b style="color:#00d4aa;font-size:13px">'+a.action+' '+sym+'</b> <span style="color:#5a6e82">Score: '+a.score+'</span></div>';
-  html+='<table style="width:100%;font-size:10px;border-collapse:collapse;margin-bottom:8px">';
-  html+='<tr style="color:#5a6e82"><td>Factor</td><td>Signal</td><td>Impact</td></tr>';
-  a.reasons.forEach(r=>{html+='<tr><td style="color:#e1e5ee">'+r.factor+'</td><td>'+r.signal+'</td><td style="color:'+(r.impact.startsWith('+')?'#00d4aa':r.impact.startsWith('-')?'#ff4757':'#5a6e82')+'">'+r.impact+'</td></tr>';});
-  html+='</table>';
-  // 2. Risk Check Panel
-  html+='<div style="background:#0d1b2a;padding:6px;border-radius:4px;margin-bottom:8px">';
-  html+='<b style="color:'+(rc.approved?'#00d4aa':'#ff4757')+'">RISK CHECK: '+rc.status+'</b><br>';
-  rc.checks.forEach(c=>{html+='<span style="color:'+(c.pass?'#00d4aa':'#ff4757')+'">'+(c.pass?'\u2713':'\u2717')+'</span> '+c.rule+' <span style="color:#5a6e82">('+c.val+')</span><br>';});
-  html+='</div>';
-  // 3. Proof of Decision (ERC-8004)
-  html+='<div style="background:#0d1b2a;padding:6px;border-radius:4px;margin-bottom:8px">';
-  html+='<b style="color:#a78bfa">PROOF OF DECISION</b><br>';
-  html+='Agent: <code>0x7a3b...8a9b</code><br>';
-  html+='Hash: <code>'+signed.intentHash.substring(0,24)+'...</code><br>';
-  html+='Sig: <code>'+signed.signature.substring(0,24)+'...</code><br>';
-  html+='<span style="color:#00d4aa">\u2713 Verified</span> | EIP-712 | Base Sepolia';
-  html+='</div>';
-  // 4. Trust Score Breakdown
-  const wr=S.tt>0?(S.wins/S.tt):0;const pnlQ=Math.min(Math.max((S.pnl+100)/200*100,0),100);const riskQ=Math.max(100-Math.abs(S.md)/5,0);const consQ=S.tt>2?wr*100:50;const valQ=S.tt>0?Math.min(S.tt*10,100):10;
-  html+='<div style="background:#0d1b2a;padding:6px;border-radius:4px">';
-  html+='<b style="color:#f5a623">TRUST SCORE: '+S.ts.toFixed(1)+'</b><br>';
-  html+='<span style="color:#e1e5ee">PnL Quality:</span> <span style="color:#00d4aa">'+pnlQ.toFixed(0)+'%</span><br>';
-  html+='<span style="color:#e1e5ee">Risk Control:</span> <span style="color:#00d4aa">'+riskQ.toFixed(0)+'%</span><br>';
-  html+='<span style="color:#e1e5ee">Consistency:</span> <span style="color:#00d4aa">'+consQ.toFixed(0)+'%</span><br>';
-  html+='<span style="color:#e1e5ee">Validation:</span> <span style="color:#00d4aa">'+valQ.toFixed(0)+'%</span>';
-  html+='</div></div>';
-  document.getElementById('reasoning').innerHTML=html;
-  S.ts=calcTrust();updateUI();
-}
-function calcTrust(){if(S.tt===0)return 50;return Math.min(parseFloat(((S.wins/Math.max(S.tt,1))*80+Math.min(S.tt*2,20)).toFixed(1)),100);}
-function updateUI(){
+      // === v4.0: Populate 4 separate Decision Intelligence cards ===
+    // 1. AI Reasoning Card
+    let arHtml='<div style="margin-bottom:8px"><b style="color:#00d4aa;font-size:15px">'+a.action+' '+sym+'</b> <span style="color:var(--sub)">Score: '+a.score+'</span></div>';
+    arHtml+='<table style="width:100%;font-size:11px;border-collapse:collapse">';
+    arHtml+='<tr style="color:#5a6e82"><td>Factor</td><td>Signal</td><td>Impact</td></tr>';
+    a.reasons.forEach(r=>{arHtml+='<tr><td style="color:#e1e5ee">'+r.factor+'</td><td>'+r.signal+'</td><td style="color:'+(r.impact.startsWith('-')?'#ff4757':'#00d4aa')+'">'+r.impact+'</td></tr>';});
+    arHtml+='</table>';
+    arHtml+='<div style="margin-top:8px;font-size:11px;color:var(--sub)">Confidence: '+(a.confidence*100).toFixed(0)+'% | Risk: '+a.risk+'</div>';
+    const arEl=document.getElementById('aiReasonContent');if(arEl)arEl.innerHTML=arHtml;
+    // 2. Risk Check Card
+    let rcHtml='<div style="margin-bottom:8px"><b style="color:'+(rc.approved?'#00d4aa':'#ff4757')+';font-size:14px">'+rc.status+'</b></div>';
+    rc.checks.forEach(c=>{rcHtml+='<div style="margin:3px 0;font-size:11px"><span style="color:'+(c.pass?'#00d4aa':'#ff4757')+'">'+(c.pass?'\u2713':'\u2717')+'</span> '+c.rule+' <span style="color:var(--sub)">('+c.val+')</span></div>';});
+    const rcEl=document.getElementById('riskCheckContent');if(rcEl)rcEl.innerHTML=rcHtml;
+    // 3. Proof of Decision Card
+    let prHtml='<div style="font-size:11px;font-family:monospace">';
+    prHtml+='<div style="margin:4px 0"><span style="color:var(--sub)">Agent:</span> <code>0x7a3b...8a9b</code></div>';
+    prHtml+='<div style="margin:4px 0"><span style="color:var(--sub)">Hash:</span> <code>'+signed.intentHash.substring(0,24)+'...</code></div>';
+    prHtml+='<div style="margin:4px 0"><span style="color:var(--sub)">Sig:</span> <code>'+signed.signature.substring(0,24)+'...</code></div>';
+    prHtml+='<div style="margin:6px 0"><span style="color:#00d4aa">\u2713 Verified</span> | EIP-712 | Base Sepolia</div>';
+    prHtml+='<div style="margin:4px 0;color:var(--sub)">'+new Date().toLocaleTimeString()+'</div></div>';
+    const prEl=document.getElementById('proofContent');if(prEl)prEl.innerHTML=prHtml;
+    // 4. Trust Score Breakdown (progress bars)
+    const wr=S.tt>0?(S.wins/S.tt):0;const pnlQ=Math.min(Math.max((S.pnl+100)/200*100,0),100);const riskQ=Math.max(100-Math.abs(S.md)/5,0);const consQ=S.tt>2?wr*100:50;const valQ=S.tt>0?Math.min(S.tt*10,100):10;
+    const tsm=document.getElementById('trustScoreMain');if(tsm)tsm.textContent=S.ts.toFixed(1);
+    const tp=document.getElementById('tbPnl');if(tp)tp.textContent=pnlQ.toFixed(0)+'%';
+    const tpb=document.getElementById('tbPnlBar');if(tpb){tpb.style.width=pnlQ+'%';tpb.className='risk-fill '+(pnlQ>60?'risk-low':pnlQ>30?'risk-med':'risk-high');}
+    const tr2=document.getElementById('tbRisk');if(tr2)tr2.textContent=riskQ.toFixed(0)+'%';
+    const trb=document.getElementById('tbRiskBar');if(trb){trb.style.width=riskQ+'%';trb.className='risk-fill '+(riskQ>60?'risk-low':riskQ>30?'risk-med':'risk-high');}
+    const tc=document.getElementById('tbCons');if(tc)tc.textContent=consQ.toFixed(0)+'%';
+    const tcb=document.getElementById('tbConsBar');if(tcb){tcb.style.width=consQ+'%';tcb.className='risk-fill '+(consQ>60?'risk-low':consQ>30?'risk-med':'risk-high');}
+    const tv=document.getElementById('tbVal');if(tv)tv.textContent=valQ.toFixed(0)+'%';
+    const tvb=document.getElementById('tbValBar');if(tvb){tvb.style.width=valQ+'%';tvb.className='risk-fill '+(valQ>60?'risk-low':valQ>30?'risk-med':'risk-high');}
   document.getElementById('trustScore').textContent=S.ts.toFixed(1);
   const pe=document.getElementById('pnl');pe.textContent=(S.pnl>=0?'+':'')+'$'+S.pnl.toFixed(2);pe.className='value '+(S.pnl>=0?'accent':'red');
   document.getElementById('pnlSub').textContent=S.tt+' trades executed';
