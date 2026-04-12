@@ -132,7 +132,7 @@ async function runTradeCycle() {
   document.getElementById('trustScore').textContent=S.ts.toFixed(1);
   const pe=document.getElementById('pnl');pe.textContent=(S.pnl>=0?'+':'')+'$'+S.pnl.toFixed(2);pe.className='value '+(S.pnl>=0?'accent':'red');
   document.getElementById('pnlSub').textContent=S.tt+' trades executed';
-  const wrPct=S.tt>0?(S.wins/S.tt*100).toFixed(1):0;document.getElementById('winRate').textContent=wrPct+'%'.toFixed(1):0;document.getElementById('winRate').textContent=wrPct+'%';document.getElementById('winSub').textContent=S.wins+'W / '+S.losses+'L';
+  const wrPct=S.tt>0?(S.wins/S.tt*100).toFixed(1):0;document.getElementById('winRate').textContent=wrPct+'%';document.getElementById('winSub').textContent=S.wins+'W / '+S.losses+'L';
   document.getElementById('sharpe').textContent=S.tt>2?(S.pnl/Math.max(Math.abs(S.md),1)*Math.sqrt(S.tt)/10).toFixed(2):'0.00';
   document.getElementById('drawdown').textContent='$'+Math.abs(S.md).toFixed(2);const dd=Math.min(Math.abs(S.md)/500*100,100);document.getElementById('drawdownBar').style.width=dd+'%';document.getElementById('drawdownBar').className='risk-fill '+(dd<30?'risk-low':dd<70?'risk-med':'risk-high');
   document.getElementById('exposure').textContent='$'+S.exp.toFixed(2);document.getElementById('exposureBar').style.width=Math.min(S.exp/10000*100,100)+'%';
