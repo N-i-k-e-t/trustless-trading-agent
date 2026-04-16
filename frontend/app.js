@@ -560,7 +560,7 @@ login = function() {
   if (currentUser) adminLog('User login: ' + currentUser.name);
 };
 
-log('Master Admin Panel v7.0 initialized');
+log('Master Admin Panel v7.0 initialized'); 
 log('Responsive design: mobile + tablet + desktop');
 
 
