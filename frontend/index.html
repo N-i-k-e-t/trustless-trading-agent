@@ -143,7 +143,7 @@ td{padding:10px 12px;font-size:13px;border-bottom:1px solid #1e2d3d10}
 <div class="tab" onclick="showPage('risk')">Risk Guardrails</div>
 <div class="tab" onclick="showPage('defi')">DeFi Integration</div>
 <div class="tab" onclick="showPage('logs')">Agent Logs</div>
-<div class="tab" onclick="showPage('about')">About & Business</div> <div class="tab" onclick="showPage('admin')">Admin Panel</div>
+<div class="tab" onclick="showPage('about')">About & Business</div> <div class="tab" onclick="showPage('admin')">Master Admin</div>
 </div>
 
 <!-- DASHBOARD PAGE -->
@@ -434,7 +434,89 @@ td{padding:10px 12px;font-size:13px;border-bottom:1px solid #1e2d3d10}
 </div>
 
 <!-- ADMIN PAGE --> <div id="admin" class="page"> <div class="hero-welcome"><h2>Admin Control Panel</h2><p>Monitor agent performance, manage settings, view session data, and control trading parameters.</p></div> <div class="grid-2"> <div class="admin-card"><h4>Agent Controls</h4> <div class="admin-toggle"><label>Auto-Trading</label><div class="toggle-switch on" onclick="this.classList.toggle('on')" id="toggleAutoTrade"></div></div> <div class="admin-toggle"><label>Live Data Feed</label><div class="toggle-switch on" onclick="this.classList.toggle('on')"></div></div> <div class="admin-toggle"><label>Risk Guardrails</label><div class="toggle-switch on" onclick="this.classList.toggle('on')"></div></div> <div class="admin-toggle"><label>ERC-8004 Signing</label><div class="toggle-switch on" onclick="this.classList.toggle('on')"></div></div> <div class="admin-toggle"><label>DeFi Integration</label><div class="toggle-switch" onclick="this.classList.toggle('on')"></div></div> <div class="admin-toggle"><label>Debug Mode</label><div class="toggle-switch" onclick="this.classList.toggle('on')"></div></div> </div> <div class="admin-card"><h4>Session Analytics</h4> <div class="admin-stat"><span class="label">Session Duration</span><span class="val" id="adminSessionTime">0:00</span></div> <div class="admin-stat"><span class="label">Trade Cycles Run</span><span class="val" id="adminTradeCycles">0</span></div> <div class="admin-stat"><span class="label">API Calls Made</span><span class="val" id="adminApiCalls">0</span></div> <div class="admin-stat"><span class="label">Signatures Generated</span><span class="val" id="adminSignatures">0</span></div> <div class="admin-stat"><span class="label">Feedback Received</span><span class="val" id="adminFeedbackCount">0</span></div> <div class="admin-stat"><span class="label">Page Views</span><span class="val" id="adminPageViews">1</span></div> </div></div> <div class="grid-2"> <div class="admin-card"><h4>Trading Parameters</h4> <div style="margin:8px 0"><label style="font-size:12px;color:var(--sub)">Max Daily Loss ($)</label><input type="number" value="500" style="width:100%;padding:8px;background:#1e2d3d;border:1px solid var(--border);border-radius:6px;color:var(--text);margin-top:4px"></div> <div style="margin:8px 0"><label style="font-size:12px;color:var(--sub)">Max Trade Size (BTC)</label><input type="number" value="0.1" step="0.01" style="width:100%;padding:8px;background:#1e2d3d;border:1px solid var(--border);border-radius:6px;color:var(--text);margin-top:4px"></div> <div style="margin:8px 0"><label style="font-size:12px;color:var(--sub)">Stop Loss (%)</label><input type="number" value="5" style="width:100%;padding:8px;background:#1e2d3d;border:1px solid var(--border);border-radius:6px;color:var(--text);margin-top:4px"></div> <button class="btn btn-primary" style="width:100%;margin-top:12px;justify-content:center">Save Parameters</button> </div> <div class="admin-card"><h4>User Feedback Log</h4> <div id="feedbackLog" class="log-box" style="max-height:300px">No feedback received yet...</div> </div></div> </div> <!-- FOOTER -->
-<div class="footer">
+<!-- MASTER ADMIN PANEL -->
+    <div id="admin" class="page">
+      <div class="hero-welcome">
+        <h2>Master Admin Panel</h2>
+        <p>Complete control center: track all users, monitor agent performance, manage settings, view real-time analytics across all sessions.</p>
+      </div>
+
+      <!-- Admin Stats Overview -->
+      <div class="grid" id="adminStatsGrid">
+        <div class="card"><h3>Total Users</h3><div class="value accent" id="adminTotalUsers">0</div><div class="sub">Registered accounts</div></div>
+        <div class="card"><h3>Active Sessions</h3><div class="value accent" id="adminActiveSessions">1</div><div class="sub">Currently online</div></div>
+        <div class="card"><h3>Total Trades</h3><div class="value" id="adminTotalTrades">0</div><div class="sub">Across all users</div></div>
+        <div class="card"><h3>Platform P&L</h3><div class="value" id="adminTotalPnl">$0.00</div><div class="sub">Combined performance</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="card"><h3>API Calls (Session)</h3><div class="value" id="adminApiCalls">0</div><div class="sub">PRISM + OpenAI</div></div>
+        <div class="card"><h3>Signatures</h3><div class="value" id="adminSignatures">0</div><div class="sub">EIP-712 signed</div></div>
+        <div class="card"><h3>Win Rate (Global)</h3><div class="value" id="adminWinRate">0%</div><div class="sub">All user trades</div></div>
+        <div class="card"><h3>Uptime</h3><div class="value" id="adminSessionTime">0:00</div><div class="sub">Current session</div></div>
+      </div>
+
+      <!-- All Users Table -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <h3 style="font-size:16px;color:var(--accent);margin:0">All Registered Users</h3>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="userSearchInput" placeholder="Search users..." style="padding:8px 12px;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;width:200px" oninput="filterAdminUsers()">
+            <button class="btn btn-outline" style="font-size:11px;padding:6px 12px" onclick="exportUsersCSV()">Export CSV</button>
+            <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" onclick="refreshAdminPanel()">Refresh</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Joined</th><th>Sessions</th><th>Last Login</th><th>Risk Profile</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="adminUsersTable"><tr><td colspan="9" style="text-align:center;color:var(--sub);padding:24px">No users registered yet. Users will appear here after signing up.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Agent Controls & Trading Parameters -->
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-size:14px;color:var(--accent);margin-bottom:16px">Agent Controls</h3>
+          <div class="admin-toggle"><div class="toggle-switch on" id="toggleAutoTrade" onclick="toggleAdminSwitch(this)"></div><label>Auto-Trading</label></div>
+          <div class="admin-toggle"><div class="toggle-switch on" id="toggleLiveData" onclick="toggleAdminSwitch(this)"></div><label>Live Data Feed</label></div>
+          <div class="admin-toggle"><div class="toggle-switch on" id="toggleRisk" onclick="toggleAdminSwitch(this)"></div><label>Risk Guardrails</label></div>
+          <div class="admin-toggle"><div class="toggle-switch on" id="toggleERC" onclick="toggleAdminSwitch(this)"></div><label>ERC-8004 Signing</label></div>
+          <div class="admin-toggle"><div class="toggle-switch on" id="toggleDeFi" onclick="toggleAdminSwitch(this)"></div><label>DeFi Integration</label></div>
+          <div class="admin-toggle"><div class="toggle-switch" id="toggleDebug" onclick="toggleAdminSwitch(this)"></div><label>Debug Mode</label></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;color:var(--accent);margin-bottom:16px">Trading Parameters</h3>
+          <div style="margin-bottom:12px"><label style="font-size:12px;color:var(--sub)">Max Daily Loss ($)</label><input type="number" value="500" id="paramDailyLoss" style="width:100%;padding:8px;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);margin-top:4px"></div>
+          <div style="margin-bottom:12px"><label style="font-size:12px;color:var(--sub)">Max Trade Size (BTC)</label><input type="number" value="0.1" step="0.01" id="paramTradeSize" style="width:100%;padding:8px;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);margin-top:4px"></div>
+          <div style="margin-bottom:12px"><label style="font-size:12px;color:var(--sub)">Stop Loss (%)</label><input type="number" value="5" id="paramStopLoss" style="width:100%;padding:8px;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);margin-top:4px"></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="saveAdminParams()">Save Parameters</button>
+        </div>
+      </div>
+
+      <!-- User Activity & Feedback -->
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-size:14px;color:var(--accent);margin-bottom:12px">Recent User Activity</h3>
+          <div class="log-box" id="adminActivityLog" style="max-height:250px">Waiting for user activity...</div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;color:var(--accent);margin-bottom:12px">User Feedback Log</h3>
+          <div class="log-box" id="feedbackLog" style="max-height:250px">No feedback received yet...</div>
+        </div>
+      </div>
+
+      <!-- System Health -->
+      <div class="card" style="margin-top:16px">
+        <h3 style="font-size:14px;color:var(--accent);margin-bottom:16px">System Health Monitor</h3>
+        <div class="grid" style="margin-bottom:0">
+          <div style="text-align:center"><div class="status-dot green" style="margin:0 auto 6px"></div><div style="font-size:11px;color:var(--sub)">PRISM API</div><div style="font-size:13px;font-weight:600;color:var(--accent)">Online</div></div>
+          <div style="text-align:center"><div class="status-dot green" style="margin:0 auto 6px"></div><div style="font-size:11px;color:var(--sub)">OpenAI GPT</div><div style="font-size:13px;font-weight:600;color:var(--accent)">Active</div></div>
+          <div style="text-align:center"><div class="status-dot green" style="margin:0 auto 6px"></div><div style="font-size:11px;color:var(--sub)">ERC-8004</div><div style="font-size:13px;font-weight:600;color:var(--accent)">Signing</div></div>
+          <div style="text-align:center"><div class="status-dot green" style="margin:0 auto 6px"></div><div style="font-size:11px;color:var(--sub)">Vercel</div><div style="font-size:13px;font-weight:600;color:var(--accent)">Deployed</div></div>
+        </div>
+      </div>
+    </div>
 Trustless Trading Agent | Built for AI Trading Agents Hackathon 2026 | ERC-8004 + Kraken CLI + PRISM API + Surge + Aerodrome
 </div>
 
