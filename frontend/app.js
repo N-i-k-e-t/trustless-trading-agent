@@ -289,3 +289,158 @@ eLog('Agent: 0x7a3b9c2d...6e7f8a9b');eLog('ERC-8004 | base-sepolia | ChainId: 84
 rLog('Circuit breaker: ARMED -$500','success');rLog('Stop-loss: 5%','success');rLog('Max exposure: $10K','success');rLog('6-point pre-trade risk check: ACTIVE','success');
 dLog('DeFi monitoring: Surge, Aerodrome, Kraken CLI');
 if(S.tt>0){updateTradeTable();log('Restored '+S.tt+' trades from agent memory');}
+
+// === USER AUTHENTICATION SYSTEM (v6.0) ===
+let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+let allUsers = JSON.parse(localStorage.getItem('allUsers') || '{}');
+
+function hashPassword(pw) {
+  let h = 0;
+  for (let i = 0; i < pw.length; i++) { h = ((h << 5) - h) + pw.charCodeAt(i); h |= 0; }
+  return 'h_' + Math.abs(h).toString(36);
+}
+
+function showAuthModal() {
+  let m = document.getElementById('authModal');
+  if (m) m.classList.remove('hidden');
+}
+
+function hideAuthModal() {
+  let m = document.getElementById('authModal');
+  if (m) m.classList.add('hidden');
+}
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.add('hidden'));
+  event.target.classList.add('active');
+  document.getElementById(tab + 'Form').classList.remove('hidden');
+}
+
+function signup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pw = document.getElementById('signupPassword').value;
+  const errEl = document.getElementById('signupError');
+  if (!name || !email || !pw) { errEl.textContent = 'All fields required'; return; }
+  if (pw.length < 6) { errEl.textContent = 'Password must be 6+ characters'; return; }
+  if (allUsers[email]) { errEl.textContent = 'Email already registered'; return; }
+  const user = { name, email, passwordHash: hashPassword(pw), joinDate: new Date().toISOString(), trades: 0, totalPnl: 0, watchlist: ['BTC','ETH'], riskProfile: 'moderate', sessions: 1 };
+  allUsers[email] = user;
+  localStorage.setItem('allUsers', JSON.stringify(allUsers));
+  currentUser = user;
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  hideAuthModal();
+  updateUserUI();
+  log('New user registered: ' + name);
+}
+
+function login() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  if (!email || !pw) { errEl.textContent = 'All fields required'; return; }
+  const user = allUsers[email];
+  if (!user || user.passwordHash !== hashPassword(pw)) { errEl.textContent = 'Invalid email or password'; return; }
+  user.sessions = (user.sessions || 0) + 1;
+  user.lastLogin = new Date().toISOString();
+  allUsers[email] = user;
+  localStorage.setItem('allUsers', JSON.stringify(allUsers));
+  currentUser = user;
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  hideAuthModal();
+  updateUserUI();
+  log('User logged in: ' + user.name);
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  updateUserUI();
+  log('User logged out');
+}
+
+function updateUserUI() {
+  const authBtn = document.getElementById('authButton');
+  const userInfo = document.getElementById('userInfo');
+  const userDash = document.getElementById('userDashboard');
+  if (currentUser) {
+    if (authBtn) authBtn.style.display = 'none';
+    if (userInfo) { userInfo.style.display = 'inline-flex'; userInfo.innerHTML = '<span class="user-avatar">' + currentUser.name.charAt(0).toUpperCase() + '</span><span>' + currentUser.name + '</span><a onclick="logout()" style="cursor:pointer;color:#ff4757;margin-left:8px;font-size:12px">Logout</a>'; }
+    if (userDash) userDash.style.display = 'block';
+    updateUserDashboard();
+  } else {
+    if (authBtn) authBtn.style.display = 'inline-block';
+    if (userInfo) userInfo.style.display = 'none';
+    if (userDash) userDash.style.display = 'none';
+  }
+}
+
+// === USER DASHBOARD ===
+function updateUserDashboard() {
+  if (!currentUser) return;
+  const el = document.getElementById('userDashContent');
+  if (!el) return;
+  const daysSince = Math.floor((Date.now() - new Date(currentUser.joinDate).getTime()) / 86400000);
+  const wr = S.tt > 0 ? (S.wins / S.tt * 100).toFixed(1) : '0.0';
+  el.innerHTML = '<div class="user-dash-grid">' +
+    '<div class="user-dash-card"><div class="user-dash-label">Member</div><div class="user-dash-value">' + (daysSince || 1) + ' days</div></div>' +
+    '<div class="user-dash-card"><div class="user-dash-label">Sessions</div><div class="user-dash-value">' + (currentUser.sessions || 1) + '</div></div>' +
+    '<div class="user-dash-card"><div class="user-dash-label">My Trades</div><div class="user-dash-value">' + S.tt + '</div></div>' +
+    '<div class="user-dash-card"><div class="user-dash-label">Win Rate</div><div class="user-dash-value">' + wr + '%</div></div>' +
+    '<div class="user-dash-card"><div class="user-dash-label">P&L</div><div class="user-dash-value" style="color:' + (S.pnl >= 0 ? '#00d4aa' : '#ff4757') + '">' + (S.pnl >= 0 ? '+' : '') + '$' + S.pnl.toFixed(2) + '</div></div>' +
+    '<div class="user-dash-card"><div class="user-dash-label">Trust Score</div><div class="user-dash-value">' + S.ts.toFixed(1) + '/100</div></div>' +
+    '<div class="user-dash-card"><div class="user-dash-label">Risk Profile</div><div class="user-dash-value">' + (currentUser.riskProfile || 'Moderate') + '</div></div>' +
+    '<div class="user-dash-card"><div class="user-dash-label">Watchlist</div><div class="user-dash-value">' + (currentUser.watchlist || ['BTC']).join(', ') + '</div></div>' +
+    '</div>';
+}
+
+// === INJECT AUTH UI INTO NAVBAR ===
+(function(){
+  const nav = document.querySelector('.header') || document.querySelector('header') || document.querySelector('.nav');
+  if (nav) {
+    let authDiv = document.createElement('div');
+    authDiv.style.cssText = 'position:absolute;right:20px;top:12px;display:flex;align-items:center;gap:8px;z-index:100';
+    authDiv.innerHTML = '<button id="authButton" onclick="showAuthModal()" style="background:#00d4aa;color:#000;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:13px">Sign In</button><div id="userInfo" style="display:none;align-items:center;gap:6px;color:#e0e6ed"></div>';
+    nav.style.position = 'relative';
+    nav.appendChild(authDiv);
+  }
+})();
+
+// === INJECT AUTH MODAL ===
+(function(){
+  let modal = document.createElement('div');
+  modal.id = 'authModal';
+  modal.className = 'hidden';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = '<div style="background:#0f1923;border:1px solid #1e2d3d;border-radius:12px;padding:30px;width:380px;max-width:90%">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h2 style="color:#00d4aa;margin:0">Trustless Agent</h2><a onclick="hideAuthModal()" style="cursor:pointer;color:#5a6e82;font-size:20px">&times;</a></div>' +
+    '<div style="display:flex;gap:0;margin-bottom:20px"><button class="auth-tab active" onclick="switchAuthTab(\'login\')" style="flex:1;padding:10px;background:#1a2836;border:1px solid #1e2d3d;color:#e0e6ed;cursor:pointer;border-radius:6px 0 0 6px">Login</button><button class="auth-tab" onclick="switchAuthTab(\'signup\')" style="flex:1;padding:10px;background:#0f1923;border:1px solid #1e2d3d;color:#5a6e82;cursor:pointer;border-radius:0 6px 6px 0">Sign Up</button></div>' +
+    '<div id="loginForm" class="auth-form"><input id="loginEmail" type="email" placeholder="Email" style="width:100%;padding:10px;margin-bottom:10px;background:#1a2836;border:1px solid #1e2d3d;color:#e0e6ed;border-radius:6px;box-sizing:border-box"><input id="loginPassword" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:10px;background:#1a2836;border:1px solid #1e2d3d;color:#e0e6ed;border-radius:6px;box-sizing:border-box"><div id="loginError" style="color:#ff4757;font-size:13px;margin-bottom:10px"></div><button onclick="login()" style="width:100%;padding:12px;background:#00d4aa;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:15px">Login</button></div>' +
+    '<div id="signupForm" class="auth-form hidden"><input id="signupName" type="text" placeholder="Full Name" style="width:100%;padding:10px;margin-bottom:10px;background:#1a2836;border:1px solid #1e2d3d;color:#e0e6ed;border-radius:6px;box-sizing:border-box"><input id="signupEmail" type="email" placeholder="Email" style="width:100%;padding:10px;margin-bottom:10px;background:#1a2836;border:1px solid #1e2d3d;color:#e0e6ed;border-radius:6px;box-sizing:border-box"><input id="signupPassword" type="password" placeholder="Password (6+ chars)" style="width:100%;padding:10px;margin-bottom:10px;background:#1a2836;border:1px solid #1e2d3d;color:#e0e6ed;border-radius:6px;box-sizing:border-box"><div id="signupError" style="color:#ff4757;font-size:13px;margin-bottom:10px"></div><button onclick="signup()" style="width:100%;padding:12px;background:#00d4aa;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:15px">Create Account</button></div>' +
+    '</div>';
+  document.body.appendChild(modal);
+  // Hide modal when class is 'hidden'
+  const style = document.createElement('style');
+  style.textContent = '.hidden{display:none!important} .user-avatar{width:30px;height:30px;background:#00d4aa;color:#000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px} .user-dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px} .user-dash-card{background:#1a2836;border:1px solid #1e2d3d;border-radius:8px;padding:12px;text-align:center} .user-dash-label{color:#5a6e82;font-size:11px;text-transform:uppercase;margin-bottom:4px} .user-dash-value{color:#e0e6ed;font-size:16px;font-weight:bold} .auth-tab.active{background:#1a2836!important;color:#00d4aa!important;border-color:#00d4aa!important}';
+  document.head.appendChild(style);
+})();
+
+// === INJECT USER DASHBOARD SECTION ===
+(function(){
+  const dashboard = document.getElementById('dashboard');
+  if (dashboard) {
+    let udDiv = document.createElement('div');
+    udDiv.id = 'userDashboard';
+    udDiv.className = 'card';
+    udDiv.style.display = 'none';
+    udDiv.style.marginBottom = '20px';
+    udDiv.innerHTML = '<h3 style="color:#00d4aa;margin-bottom:5px">My Dashboard</h3><div id="userDashContent"></div>';
+    const first = dashboard.querySelector('.hero-welcome') || dashboard.firstChild;
+    if (first) dashboard.insertBefore(udDiv, first);
+    else dashboard.appendChild(udDiv);
+  }
+})();
+
+// Auto-login if user exists
+if (currentUser) { updateUserUI(); log('Welcome back, ' + currentUser.name); }
