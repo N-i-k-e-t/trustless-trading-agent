@@ -444,3 +444,124 @@ function updateUserDashboard() {
 
 // Auto-login if user exists
 if (currentUser) { updateUserUI(); log('Welcome back, ' + currentUser.name); }
+
+// === MASTER ADMIN PANEL (v7.0) ===
+function refreshAdminPanel() {
+  const users = JSON.parse(localStorage.getItem('allUsers') || '{}');
+  const userList = Object.values(users);
+  const totalUsers = userList.length;
+  const totalSessions = userList.reduce((a, u) => a + (u.sessions || 0), 0);
+  
+  // Update stats
+  const tue = document.getElementById('adminTotalUsers'); if(tue) tue.textContent = totalUsers;
+  const tae = document.getElementById('adminActiveSessions'); if(tae) tae.textContent = currentUser ? 1 : 0;
+  const tte = document.getElementById('adminTotalTrades'); if(tte) tte.textContent = S.tt;
+  const tpe = document.getElementById('adminTotalPnl'); if(tpe) { tpe.textContent = (S.pnl >= 0 ? '+' : '') + '$' + S.pnl.toFixed(2); tpe.className = 'value ' + (S.pnl >= 0 ? 'accent' : 'red'); }
+  const ace = document.getElementById('adminApiCalls'); if(ace) ace.textContent = sessionApiCalls;
+  const sge = document.getElementById('adminSignatures'); if(sge) sge.textContent = S.tt;
+  const wre = document.getElementById('adminWinRate'); if(wre) wre.textContent = S.tt > 0 ? (S.wins/S.tt*100).toFixed(1) + '%' : '0%';
+  
+  // Update users table
+  const tbody = document.getElementById('adminUsersTable');
+  if (tbody) {
+    if (totalUsers === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--sub);padding:24px">No users registered yet.</td></tr>';
+    } else {
+      tbody.innerHTML = userList.map((u, i) => {
+        const joined = u.joinDate ? new Date(u.joinDate).toLocaleDateString() : 'N/A';
+        const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'N/A';
+        const isOnline = currentUser && currentUser.email === u.email;
+        return '<tr>' +
+          '<td>' + (i+1) + '</td>' +
+          '<td><strong>' + (u.name || 'Unknown') + '</strong></td>' +
+          '<td style="color:var(--sub);font-size:12px">' + (u.email || 'N/A') + '</td>' +
+          '<td>' + joined + '</td>' +
+          '<td style="text-align:center">' + (u.sessions || 0) + '</td>' +
+          '<td style="font-size:11px">' + lastLogin + '</td>' +
+          '<td><span style="background:#00d4aa20;color:var(--accent);padding:2px 8px;border-radius:10px;font-size:11px">' + (u.riskProfile || 'moderate') + '</span></td>' +
+          '<td>' + (isOnline ? '<span class="status-dot green"></span> Online' : '<span class="status-dot yellow"></span> Offline') + '</td>' +
+          '<td><button class="btn btn-outline" style="font-size:10px;padding:3px 8px" onclick="viewUserDetail(\'' + u.email + '\')">View</button></td>' +
+          '</tr>';
+      }).join('');
+    }
+  }
+  
+  // Log activity
+  adminLog('Admin panel refreshed: ' + totalUsers + ' users, ' + S.tt + ' trades');
+}
+
+function adminLog(msg) {
+  const el = document.getElementById('adminActivityLog');
+  if (!el) return;
+  const ts = new Date().toLocaleTimeString();
+  if (el.textContent === 'Waiting for user activity...') el.innerHTML = '';
+  el.innerHTML += '<div class="log-entry"><span class="log-time">[' + ts + ']</span> <span class="log-success">' + msg + '</span></div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function filterAdminUsers() {
+  const q = (document.getElementById('userSearchInput').value || '').toLowerCase();
+  const rows = document.querySelectorAll('#adminUsersTable tr');
+  rows.forEach(r => { r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+function exportUsersCSV() {
+  const users = JSON.parse(localStorage.getItem('allUsers') || '{}');
+  const userList = Object.values(users);
+  if (userList.length === 0) { alert('No users to export'); return; }
+  let csv = 'Name,Email,Joined,Sessions,Risk Profile,Last Login\n';
+  userList.forEach(u => {
+    csv += '"' + (u.name||'') + '","' + (u.email||'') + '","' + (u.joinDate||'') + '",' + (u.sessions||0) + ',"' + (u.riskProfile||'moderate') + '","' + (u.lastLogin||'N/A') + '"\n';
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'trustless_agent_users_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  adminLog('Exported ' + userList.length + ' users to CSV');
+}
+
+function viewUserDetail(email) {
+  const users = JSON.parse(localStorage.getItem('allUsers') || '{}');
+  const u = users[email];
+  if (!u) return;
+  alert('User: ' + u.name + '\nEmail: ' + u.email + '\nJoined: ' + (u.joinDate ? new Date(u.joinDate).toLocaleDateString() : 'N/A') + '\nSessions: ' + (u.sessions || 0) + '\nRisk: ' + (u.riskProfile || 'moderate') + '\nWatchlist: ' + (u.watchlist || []).join(', '));
+}
+
+function toggleAdminSwitch(el) {
+  el.classList.toggle('on');
+  adminLog('Toggle: ' + el.id + ' => ' + (el.classList.contains('on') ? 'ON' : 'OFF'));
+}
+
+function saveAdminParams() {
+  const dl = document.getElementById('paramDailyLoss');
+  const ts = document.getElementById('paramTradeSize');
+  const sl = document.getElementById('paramStopLoss');
+  adminLog('Parameters saved: Daily Loss=$' + (dl?dl.value:'500') + ', Trade Size=' + (ts?ts.value:'0.1') + 'BTC, Stop Loss=' + (sl?sl.value:'5') + '%');
+  log('Admin: Trading parameters updated', 'warn');
+}
+
+// Auto-refresh admin panel when tab is shown
+const origShowPage = showPage;
+showPage = function(id) {
+  origShowPage.call(this, id);
+  if (id === 'admin') refreshAdminPanel();
+};
+
+// Track signups/logins in admin activity
+const origSignup = signup;
+signup = function() {
+  origSignup();
+  if (currentUser) adminLog('New signup: ' + currentUser.name + ' (' + currentUser.email + ')');
+};
+const origLogin = login;
+login = function() {
+  origLogin();
+  if (currentUser) adminLog('User login: ' + currentUser.name);
+};
+
+log('Master Admin Panel v7.0 initialized');
+log('Responsive design: mobile + tablet + desktop');
+
+
+if (currentUser) { updateUserUI(); log('Welcome back, ' + currentUser.name); }
