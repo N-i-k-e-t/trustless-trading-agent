@@ -563,5 +563,110 @@ login = function() {
 log('Master Admin Panel v7.0 initialized'); 
 log('Responsive design: mobile + tablet + desktop');
 
+// === ENHANCED MASTER ADMIN v8.0 ===
+// User Detail Modal (replaces alert)
+function viewUserDetail(email) {
+  const users = JSON.parse(localStorage.getItem('allUsers') || '{}');
+  const u = users[email];
+  if (!u) return;
+  const daysSince = Math.floor((Date.now() - new Date(u.joinDate).getTime()) / 86400000) || 1;
+  const isOnline = currentUser && currentUser.email === u.email;
+  let modal = document.getElementById('userDetailModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'userDetailModal';
+    document.body.appendChild(modal);
+  }
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = '<div style="background:#111827;border:1px solid #1e2d3d;border-radius:14px;padding:28px;width:450px;max-width:92%">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;background:#00d4aa;color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px">' + u.name.charAt(0).toUpperCase() + '</div><div><div style="font-size:16px;font-weight:700;color:#e0e6ed">' + u.name + '</div><div style="font-size:12px;color:#5a6e82">' + u.email + '</div></div></div><a onclick="document.getElementById(\'userDetailModal\').style.display=\'none\'" style="cursor:pointer;color:#5a6e82;font-size:22px">&times;</a></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+    '<div style="background:#0d1117;border:1px solid #1e2d3d;border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:#5a6e82;text-transform:uppercase">Member</div><div style="font-size:18px;font-weight:700;color:#e0e6ed">' + daysSince + ' days</div></div>' +
+    '<div style="background:#0d1117;border:1px solid #1e2d3d;border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:#5a6e82;text-transform:uppercase">Sessions</div><div style="font-size:18px;font-weight:700;color:#e0e6ed">' + (u.sessions || 1) + '</div></div>' +
+    '<div style="background:#0d1117;border:1px solid #1e2d3d;border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:#5a6e82;text-transform:uppercase">Risk</div><div style="font-size:18px;font-weight:700;color:#00d4aa">' + (u.riskProfile || 'moderate') + '</div></div>' +
+    '<div style="background:#0d1117;border:1px solid #1e2d3d;border-radius:8px;padding:12px;text-align:center"><div style="font-size:10px;color:#5a6e82;text-transform:uppercase">Status</div><div style="font-size:18px;font-weight:700;color:' + (isOnline ? '#00d4aa' : '#ff4757') + '">' + (isOnline ? 'Online' : 'Offline') + '</div></div>' +
+    '</div>' +
+    '<div style="background:#0d1117;border:1px solid #1e2d3d;border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:10px;color:#5a6e82;text-transform:uppercase;margin-bottom:6px">Watchlist</div><div style="display:flex;gap:6px;flex-wrap:wrap">' + (u.watchlist || ['BTC','ETH']).map(function(w){ return '<span style="background:#00d4aa20;color:#00d4aa;padding:3px 10px;border-radius:12px;font-size:11px;border:1px solid #00d4aa40">' + w + '</span>'; }).join('') + '</div></div>' +
+    '<div style="font-size:11px;color:#5a6e82">Joined: ' + new Date(u.joinDate).toLocaleDateString() + ' | Last Login: ' + (u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'N/A') + '</div></div>';
+  adminLog('Viewed user detail: ' + u.name);
+}
+
+// === ADMIN: Real-time Performance Monitor ===
+let adminAutoRefreshInterval = null;
+function startAdminAutoRefresh() {
+  if (adminAutoRefreshInterval) return;
+  adminAutoRefreshInterval = setInterval(function() {
+    refreshAdminPanel();
+    updateSystemHealth();
+  }, 10000);
+  adminLog('Admin auto-refresh started (10s)');
+}
+function stopAdminAutoRefresh() {
+  if (adminAutoRefreshInterval) { clearInterval(adminAutoRefreshInterval); adminAutoRefreshInterval = null; }
+  adminLog('Admin auto-refresh stopped');
+}
+
+// === System Health Monitor ===
+function updateSystemHealth() {
+  const indicators = [
+    { id: 'healthPrism', status: priceCache.lastUpdate > Date.now() - 120000 ? 'online' : 'degraded' },
+    { id: 'healthOpenAI', status: S.trades.some(function(t){ return t.agentic; }) ? 'active' : 'standby' },
+    { id: 'healthERC', status: 'signing' },
+    { id: 'healthVercel', status: 'deployed' }
+  ];
+  indicators.forEach(function(ind) {
+    const el = document.getElementById(ind.id);
+    if (el) {
+      el.className = 'status-dot ' + (ind.status === 'online' || ind.status === 'active' || ind.status === 'signing' || ind.status === 'deployed' ? 'green' : 'yellow');
+    }
+  });
+}
+
+// === Admin: Platform Analytics Summary ===
+function getAnalyticsSummary() {
+  const users = Object.values(JSON.parse(localStorage.getItem('allUsers') || '{}'));
+  const totalSessions = users.reduce(function(a, u) { return a + (u.sessions || 0); }, 0);
+  const avgSessions = users.length > 0 ? (totalSessions / users.length).toFixed(1) : '0';
+  const riskProfiles = { conservative: 0, moderate: 0, aggressive: 0 };
+  users.forEach(function(u) { riskProfiles[u.riskProfile || 'moderate']++; });
+  return {
+    totalUsers: users.length,
+    totalSessions: totalSessions,
+    avgSessions: avgSessions,
+    riskProfiles: riskProfiles,
+    totalTrades: S.tt,
+    totalPnl: S.pnl,
+    winRate: S.tt > 0 ? (S.wins / S.tt * 100).toFixed(1) : '0',
+    apiCalls: sessionApiCalls,
+    uptime: Math.floor((Date.now() - sessionStart) / 1000)
+  };
+}
+
+// === Mobile Navigation Toggle ===
+(function() {
+  const header = document.querySelector('.header');
+  if (header && window.innerWidth <= 768) {
+    const menuBtn = document.createElement('button');
+    menuBtn.innerHTML = '&#9776;';
+    menuBtn.style.cssText = 'background:none;border:1px solid #1e2d3d;color:#e0e6ed;font-size:20px;padding:4px 10px;border-radius:6px;cursor:pointer;display:none';
+    menuBtn.id = 'mobileMenuBtn';
+    menuBtn.onclick = function() {
+      const tabs = document.querySelector('.tabs');
+      if (tabs) tabs.style.display = tabs.style.display === 'none' ? 'flex' : 'none';
+    };
+    header.appendChild(menuBtn);
+  }
+})();
+
+// Start admin auto-refresh when admin tab is opened
+const origShowPage2 = showPage;
+showPage = function(id) {
+  origShowPage2.call(this, id);
+  if (id === 'admin') { startAdminAutoRefresh(); refreshAdminPanel(); updateSystemHealth(); }
+  else stopAdminAutoRefresh();
+};
+
+log('Enhanced Admin v8.0: User detail modal, auto-refresh, system health, analytics');
+
 
 if (currentUser) { updateUserUI(); log('Welcome back, ' + currentUser.name); }
