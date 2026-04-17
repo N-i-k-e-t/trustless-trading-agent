@@ -556,6 +556,59 @@ tr:hover td{background:rgba(0,212,170,0.03)}
         </div>
       </div>
     </div>
+
+    <!-- OWNER ACTIVITY DASHBOARD v9.0 -->
+<div id="ownerAdmin" class="page">
+    <div class="hero-welcome">
+        <h2>&#x1F451; Owner Activity Dashboard</h2>
+        <p>Complete tracking of all user activities: who visited, what they did, time spent on each page, trades executed, every interaction from arrival to exit. Full user journey visibility for the platform owner.</p>
+    </div>
+
+    <div id="ownerStatsGrid" class="grid">
+        <div class="card" style="text-align:center"><h3>Total Events</h3><div class="value accent">0</div></div>
+        <div class="card" style="text-align:center"><h3>Unique Users</h3><div class="value" style="color:#3b82f6">0</div></div>
+        <div class="card" style="text-align:center"><h3>Trade Events</h3><div class="value" style="color:#f59e0b">0</div></div>
+        <div class="card" style="text-align:center"><h3>Auth Events</h3><div class="value" style="color:#8b5cf6">0</div></div>
+    </div>
+
+    <div class="admin-grid-2">
+        <div class="card">
+            <h3>&#x1F465; User Journey Tracker</h3>
+            <p style="font-size:11px;color:var(--sub);margin-bottom:12px">Complete flow: Landing &#x2192; Signup/Login &#x2192; Page visits &#x2192; Trades &#x2192; Feedback &#x2192; Exit</p>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead><tr><th>#</th><th>User</th><th>Email</th><th>Actions</th><th>Pages</th><th>Trades</th><th>Duration</th><th>Status</th><th>Details</th></tr></thead>
+                    <tbody id="ownerJourneyTable"><tr><td colspan="9" style="text-align:center;color:var(--sub);padding:20px">No user journeys recorded yet.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <h3>&#x1F4E1; Live Activity Feed</h3>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <button class="btn btn-primary" style="font-size:11px;padding:6px 12px" onclick="ActivityTracker.refreshOwnerPanel();ActivityTracker.renderOwnerStats();ActivityTracker.renderUserJourneyTable()">&#x1F504; Refresh</button>
+                <button class="btn btn-outline" style="font-size:11px;padding:6px 12px" onclick="ActivityTracker.exportActivityCSV()">&#x1F4E5; Export CSV</button>
+                <button class="btn btn-danger" style="font-size:11px;padding:6px 12px" onclick="ActivityTracker.clearEvents()">&#x1F5D1; Clear All</button>
+            </div>
+            <div id="ownerActivityFeed" class="log-box" style="max-height:500px">
+                <div style="color:var(--sub);padding:20px;text-align:center">No activity recorded yet. Users will appear here as they interact with the platform.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+        <h3>Activity Categories Legend</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:8px">
+            <span style="font-size:12px">&#x1F4CD; <span style="color:#3b82f6">Navigation</span></span>
+            <span style="font-size:12px">&#x1F510; <span style="color:#8b5cf6">Auth (Login/Signup/Logout)</span></span>
+            <span style="font-size:12px">&#x1F4B9; <span style="color:#00d4aa">Trades</span></span>
+            <span style="font-size:12px">&#x1F4AC; <span style="color:#f59e0b">Feedback</span></span>
+            <span style="font-size:12px">&#x2699;&#xFE0F; <span style="color:#6366f1">Settings</span></span>
+            <span style="font-size:12px">&#x1F518; <span style="color:#06b6d4">Interactions</span></span>
+            <span style="font-size:12px">&#x26A1; <span style="color:#64748b">System</span></span>
+        </div>
+    </div>
+</div>
+
 Trustless Trading Agent | Built for AI Trading Agents Hackathon 2026 | ERC-8004 + Kraken CLI + PRISM API + Surge + Aerodrome
 </div>
 
