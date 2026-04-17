@@ -669,4 +669,350 @@ showPage = function(id) {
 log('Enhanced Admin v8.0: User detail modal, auto-refresh, system health, analytics');
 
 
+
+// === OWNER ACTIVITY TRACKING SYSTEM v9.0 ===
+// Complete user journey tracking: arrival -> signup -> every action -> time spent
+
+const ActivityTracker = {
+  events: JSON.parse(localStorage.getItem('activityEvents') || '[]'),
+  userJourneys: JSON.parse(localStorage.getItem('userJourneys') || '{}'),
+  pageTimers: {},
+  currentPage: 'dashboard',
+  sessionId: 'sess_' + Date.now().toString(36),
+
+  track: function(category, action, details) {
+    const evt = {
+      id: 'evt_' + Date.now().toString(36) + Math.random().toString(36).substr(2,4),
+      ts: new Date().toISOString(),
+      time: new Date().toLocaleString(),
+      sessionId: this.sessionId,
+      user: currentUser ? currentUser.email : 'anonymous',
+      userName: currentUser ? currentUser.name : 'Guest',
+      category: category,
+      action: action,
+      details: details || '',
+      page: this.currentPage,
+      url: window.location.href
+    };
+    this.events.push(evt);
+    if (this.events.length > 500) this.events = this.events.slice(-500);
+    localStorage.setItem('activityEvents', JSON.stringify(this.events));
+    this.updateJourney(evt);
+    this.refreshOwnerPanel();
+    return evt;
+  },
+  updateJourney: function(evt) {
+    const uid = evt.user;
+    if (!this.userJourneys[uid]) {
+      this.userJourneys[uid] = {
+        firstVisit: evt.ts,
+        name: evt.userName,
+        sessions: [],
+        totalTime: 0,
+        pagesVisited: [],
+        actions: [],
+        trades: 0,
+        signups: 0,
+        logins: 0,
+        feedbacks: 0
+      };
+    }
+    const j = this.userJourneys[uid];
+    j.lastActive = evt.ts;
+    j.actions.push({ts: evt.ts, cat: evt.category, act: evt.action, det: evt.details, page: evt.page});
+    if (j.actions.length > 200) j.actions = j.actions.slice(-200);
+    if (evt.category === 'trade') j.trades++;
+    if (evt.action === 'signup') j.signups++;
+    if (evt.action === 'login') j.logins++;
+    if (evt.category === 'feedback') j.feedbacks++;
+    if (j.pagesVisited.indexOf(evt.page) === -1) j.pagesVisited.push(evt.page);
+    localStorage.setItem('userJourneys', JSON.stringify(this.userJourneys));
+  },
+
+  startPageTimer: function(page) {
+    this.pageTimers[page] = Date.now();
+    this.currentPage = page;
+  },
+
+  endPageTimer: function(page) {
+    if (this.pageTimers[page]) {
+      const spent = Math.floor((Date.now() - this.pageTimers[page]) / 1000);
+      this.track('navigation', 'page_leave', page + ' (' + spent + 's)');
+      delete this.pageTimers[page];
+      return spent;
+    }
+    return 0;
+  },
+
+  getEventsByUser: function(email) {
+    return this.events.filter(function(e) { return e.user === email; });
+  },
+
+  getEventsByCategory: function(cat) {
+    return this.events.filter(function(e) { return e.category === cat; });
+  },
+
+  getRecentEvents: function(count) {
+    return this.events.slice(-(count || 50)).reverse();
+  },
+
+  getUserSessions: function(email) {
+    var evts = this.getEventsByUser(email);
+    var sessions = {};
+    evts.forEach(function(e) {
+      if (!sessions[e.sessionId]) sessions[e.sessionId] = {start: e.ts, events: [], end: e.ts};
+      sessions[e.sessionId].events.push(e);
+      sessions[e.sessionId].end = e.ts;
+    });
+    return Object.values(sessions);
+  },
+
+  getStats: function() {
+    var users = {};
+    var cats = {};
+    var pages = {};
+    this.events.forEach(function(e) {
+      users[e.user] = (users[e.user] || 0) + 1;
+      cats[e.category] = (cats[e.category] || 0) + 1;
+      pages[e.page] = (pages[e.page] || 0) + 1;
+    });
+    return {totalEvents: this.events.length, uniqueUsers: Object.keys(users).length, byCategory: cats, byPage: pages, byUser: users};
+  },
+
+  refreshOwnerPanel: function() {
+    var el = document.getElementById('ownerActivityFeed');
+    if (!el) return;
+    var recent = this.getRecentEvents(30);
+    if (recent.length === 0) { el.innerHTML = '<div style="color:var(--sub);padding:20px;text-align:center">No activity recorded yet. Users will appear here as they interact with the platform.</div>'; return; }
+    var html = '';
+    recent.forEach(function(e) {
+      var icon = {navigation:'\uD83D\uDCCD',auth:'\uD83D\uDD10',trade:'\uD83D\uDCB9',feedback:'\uD83D\uDCAC',settings:'\u2699\uFE0F',interaction:'\uD83D\uDD18',system:'\u26A1'}[e.category] || '\u25CF';
+      var color = {navigation:'#3b82f6',auth:'#8b5cf6',trade:'#00d4aa',feedback:'#f59e0b',settings:'#6366f1',interaction:'#06b6d4',system:'#64748b'}[e.category] || '#5a6e82';
+      html += '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #1e2d3d20;align-items:flex-start">';
+      html += '<div style="font-size:16px;min-width:24px;text-align:center">' + icon + '</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+      html += '<span style="font-weight:600;font-size:12px;color:' + color + '">' + e.userName + '</span>';
+      html += '<span style="font-size:10px;color:var(--sub)">' + new Date(e.ts).toLocaleTimeString() + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--text);margin-top:2px">' + e.action + (e.details ? ' - ' + e.details : '') + '</div>';
+      html += '<div style="font-size:10px;color:var(--sub);margin-top:1px">' + e.category + ' \u2022 ' + e.page + '</div>';
+      html += '</div></div>';
+    });
+    el.innerHTML = html;
+  },
+
+  renderUserJourneyDetail: function(email) {
+    var j = this.userJourneys[email];
+    if (!j) return;
+    var evts = this.getEventsByUser(email);
+    var sessions = this.getUserSessions(email);
+    var modal = document.getElementById('userDetailModal') || document.createElement('div');
+    modal.id = 'userDetailModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10001;display:flex;align-items:center;justify-content:center';
+    var timelineHtml = '';
+    var lastEvts = evts.slice(-20).reverse();
+    lastEvts.forEach(function(e) {
+      var icon = {navigation:'\uD83D\uDCCD',auth:'\uD83D\uDD10',trade:'\uD83D\uDCB9',feedback:'\uD83D\uDCAC',settings:'\u2699\uFE0F',interaction:'\uD83D\uDD18',system:'\u26A1'}[e.category] || '\u25CF';
+      timelineHtml += '<div style="display:flex;gap:8px;padding:6px 0;border-left:2px solid #1e2d3d;margin-left:8px;padding-left:12px">';
+      timelineHtml += '<span>' + icon + '</span>';
+      timelineHtml += '<div><div style="font-size:11px;color:var(--text)">' + e.action + (e.details ? ' - ' + e.details : '') + '</div>';
+      timelineHtml += '<div style="font-size:10px;color:var(--sub)">' + new Date(e.ts).toLocaleString() + ' \u2022 ' + e.page + '</div></div></div>';
+    });
+    modal.innerHTML = '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:700px;width:95%;max-height:85vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<div><h3 style="color:var(--accent);margin:0">' + (j.name || email) + '</h3><div style="color:var(--sub);font-size:12px">' + email + '</div></div>' +
+      '<button onclick="document.getElementById(\'userDetailModal\').remove()" style="background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer">\u2715</button></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--sub)">Total Actions</div><div style="font-size:20px;font-weight:700;color:var(--accent)">' + j.actions.length + '</div></div>' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--sub)">Sessions</div><div style="font-size:20px;font-weight:700;color:#3b82f6">' + sessions.length + '</div></div>' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--sub)">Trades</div><div style="font-size:20px;font-weight:700;color:#f59e0b">' + j.trades + '</div></div>' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--sub)">Pages Visited</div><div style="font-size:20px;font-weight:700;color:#8b5cf6">' + j.pagesVisited.length + '</div></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px"><div style="font-size:10px;color:var(--sub);margin-bottom:4px">First Visit</div><div style="font-size:12px;color:var(--text)">' + new Date(j.firstVisit).toLocaleString() + '</div></div>' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px"><div style="font-size:10px;color:var(--sub);margin-bottom:4px">Last Active</div><div style="font-size:12px;color:var(--text)">' + new Date(j.lastActive).toLocaleString() + '</div></div>' +
+      '</div>' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px;margin-bottom:12px"><div style="font-size:10px;color:var(--sub);margin-bottom:6px">Pages Visited</div><div>' + j.pagesVisited.map(function(p){return '<span style="display:inline-block;padding:2px 8px;background:#1e2d3d;border-radius:4px;font-size:10px;color:var(--accent);margin:2px">' + p + '</span>';}).join('') + '</div></div>' +
+      '<h4 style="font-size:12px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Activity Timeline (Last 20)</h4>' +
+      '<div style="background:#0d1117;padding:12px;border-radius:8px;max-height:300px;overflow-y:auto">' + timelineHtml + '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+  },
+
+  renderOwnerStats: function() {
+    var stats = this.getStats();
+    var el = document.getElementById('ownerStatsGrid');
+    if (!el) return;
+    el.innerHTML = '<div class="card" style="text-align:center"><h3>Total Events</h3><div class="value accent">' + stats.totalEvents + '</div></div>' +
+      '<div class="card" style="text-align:center"><h3>Unique Users</h3><div class="value" style="color:#3b82f6">' + stats.uniqueUsers + '</div></div>' +
+      '<div class="card" style="text-align:center"><h3>Trade Events</h3><div class="value" style="color:#f59e0b">' + (stats.byCategory.trade || 0) + '</div></div>' +
+      '<div class="card" style="text-align:center"><h3>Auth Events</h3><div class="value" style="color:#8b5cf6">' + (stats.byCategory.auth || 0) + '</div></div>';
+  },
+
+  renderUserJourneyTable: function() {
+    var el = document.getElementById('ownerJourneyTable');
+    if (!el) return;
+    var journeys = this.userJourneys;
+    var keys = Object.keys(journeys);
+    if (keys.length === 0) { el.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:20px">No user journeys recorded yet.</td></tr>'; return; }
+    el.innerHTML = keys.map(function(k, i) {
+      var j = journeys[k];
+      var dur = j.lastActive && j.firstVisit ? Math.floor((new Date(j.lastActive) - new Date(j.firstVisit)) / 60000) : 0;
+      var isActive = j.lastActive && (Date.now() - new Date(j.lastActive).getTime()) < 300000;
+      return '<tr>' +
+        '<td>' + (i+1) + '</td>' +
+        '<td><strong>' + (j.name || 'Guest') + '</strong></td>' +
+        '<td>' + k + '</td>' +
+        '<td>' + j.actions.length + '</td>' +
+        '<td>' + j.pagesVisited.length + '</td>' +
+        '<td>' + j.trades + '</td>' +
+        '<td>' + dur + ' min</td>' +
+        '<td>' + (isActive ? '<span style="color:var(--accent)">\u25CF Active</span>' : '<span style="color:var(--sub)">\u25CB Offline</span>') + '</td>' +
+        '<td><button class="btn btn-outline" style="padding:4px 10px;font-size:10px" onclick="ActivityTracker.renderUserJourneyDetail(\'' + k + '\')">Timeline</button></td>' +
+        '</tr>';
+    }).join('');
+  },
+
+  exportActivityCSV: function() {
+    var csv = 'Timestamp,User,Category,Action,Details,Page,Session\n';
+    this.events.forEach(function(e) {
+      csv += '"' + e.time + '","' + e.userName + '","' + e.category + '","' + e.action + '","' + (e.details||'') + '","' + e.page + '","' + e.sessionId + '"\n';
+    });
+    var blob = new Blob([csv], {type:'text/csv'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'activity_log_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+  },
+
+  clearEvents: function() {
+    if (!confirm('Clear all activity events? This cannot be undone.')) return;
+    this.events = [];
+    this.userJourneys = {};
+    localStorage.removeItem('activityEvents');
+    localStorage.removeItem('userJourneys');
+    this.refreshOwnerPanel();
+    this.renderOwnerStats();
+    this.renderUserJourneyTable();
+  }
+};
+
+// === HOOK INTO ALL USER ACTIONS ===
+// Track page visits
+var origShowPage3 = showPage;
+showPage = function(id) {
+  ActivityTracker.endPageTimer(ActivityTracker.currentPage);
+  origShowPage3.call(this, id);
+  ActivityTracker.startPageTimer(id);
+  ActivityTracker.track('navigation', 'page_visit', id);
+  if (id === 'ownerAdmin') {
+    ActivityTracker.renderOwnerStats();
+    ActivityTracker.renderUserJourneyTable();
+    ActivityTracker.refreshOwnerPanel();
+  }
+};
+
+// Track signups
+var origSignup2 = signup;
+signup = function() {
+  origSignup2();
+  if (currentUser) ActivityTracker.track('auth', 'signup', currentUser.name + ' (' + currentUser.email + ')');
+};
+
+// Track logins
+var origLogin2 = login;
+login = function() {
+  origLogin2();
+  if (currentUser) ActivityTracker.track('auth', 'login', currentUser.name);
+};
+
+// Track logouts
+var origLogout = logout;
+logout = function() {
+  var name = currentUser ? currentUser.name : 'Unknown';
+  origLogout();
+  ActivityTracker.track('auth', 'logout', name);
+};
+
+// Track trade cycles
+var origRunTrade = runTradeCycle;
+runTradeCycle = async function() {
+  ActivityTracker.track('trade', 'trade_cycle_start', document.getElementById('symbolSelect').value);
+  await origRunTrade();
+  ActivityTracker.track('trade', 'trade_cycle_complete', 'PnL: $' + S.pnl.toFixed(2) + ' | Trades: ' + S.tt);
+};
+
+// Track auto-trade
+var origAutoTrade = autoTrade;
+autoTrade = function() {
+  ActivityTracker.track('trade', 'auto_trade_toggle', S.ai ? 'stopped' : 'started');
+  origAutoTrade();
+};
+
+// Track emergency stop
+var origEmergency = emergencyStop;
+emergencyStop = function() {
+  ActivityTracker.track('trade', 'emergency_stop', 'Circuit breaker trips: ' + (S.cbt + 1));
+  origEmergency();
+};
+
+// Track feedback
+var origSubmitFeedback = submitFeedback;
+submitFeedback = function() {
+  var txt = document.getElementById('feedbackText');
+  var type = document.getElementById('feedbackType');
+  ActivityTracker.track('feedback', 'feedback_submit', (type ? type.value : 'general') + ': ' + (txt ? txt.value.substring(0, 50) : ''));
+  origSubmitFeedback();
+};
+
+// Track admin param saves
+var origSaveParams = saveAdminParams;
+saveAdminParams = function() {
+  ActivityTracker.track('settings', 'params_saved', 'Admin updated trading parameters');
+  origSaveParams();
+};
+
+// Track toggle switches
+var origToggle = toggleAdminSwitch;
+toggleAdminSwitch = function(el) {
+  ActivityTracker.track('settings', 'toggle_switch', el.id + ' => ' + (!el.classList.contains('on') ? 'ON' : 'OFF'));
+  origToggle(el);
+};
+
+// Track symbol changes
+document.getElementById('symbolSelect').addEventListener('change', function() {
+  ActivityTracker.track('interaction', 'symbol_change', this.value);
+});
+
+// Track scroll depth
+var maxScroll = 0;
+window.addEventListener('scroll', function() {
+  var pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+  if (pct > maxScroll + 20) {
+    maxScroll = pct;
+    ActivityTracker.track('interaction', 'scroll_depth', pct + '%');
+  }
+});
+
+// Track initial page load
+ActivityTracker.track('system', 'page_load', 'Trustless Trading Agent loaded');
+ActivityTracker.startPageTimer('dashboard');
+
+// Add Owner Admin tab to navigation
+(function() {
+  var tabs = document.querySelector('.tabs');
+  if (tabs) {
+    var ownerTab = document.createElement('div');
+    ownerTab.className = 'tab';
+    ownerTab.textContent = 'Owner Dashboard';
+    ownerTab.style.color = '#f59e0b';
+    ownerTab.onclick = function(e) { showPage('ownerAdmin'); };
+    tabs.appendChild(ownerTab);
+  }
+})();
+
+log('Owner Activity Tracking v9.0 initialized');
+log('Full user journey tracking: arrival -> actions -> time spent');
+
 if (currentUser) { updateUserUI(); log('Welcome back, ' + currentUser.name); }
