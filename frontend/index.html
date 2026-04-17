@@ -146,6 +146,86 @@ tr:hover td{background:rgba(0,212,170,0.03)}
 /* Touch targets for mobile */
 @media(max-width:768px){.btn,.tab,.toggle-switch,.select-styled{min-height:44px}.admin-toggle{padding:4px 0}}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.card .value{font-size:24px}}
+    /* === FRONTEND POLISH v10.0 === */
+/* Enhanced header with gradient border */
+.header{background:linear-gradient(135deg,#0a0e17 0%,#0f1724 50%,#1a2332 100%);border-bottom:2px solid;border-image:linear-gradient(90deg,var(--accent),#7c3aed,#0099ff) 1;padding:14px 24px}
+.header h1{font-size:24px;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--accent) 0%,#0099ff 50%,#7c3aed 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900}
+.header p{color:var(--sub);font-size:11px;margin-top:2px;letter-spacing:0.3px}
+/* Enhanced ticker bar */
+.ticker-bar{background:linear-gradient(90deg,#080c14,#0d1520,#080c14);border-bottom:1px solid #1e2d3d50;padding:10px 20px;gap:32px}
+.ticker-item .sym{font-weight:700;color:#fff;font-size:13px}
+.ticker-item .price{color:var(--accent);font-weight:600;font-size:13px}
+/* Glowing cards */
+.card{background:linear-gradient(145deg,#111827,#0d1420);border:1px solid #1e2d3d80;box-shadow:0 4px 24px rgba(0,0,0,0.3)}
+.card:hover{border-color:var(--accent);box-shadow:0 8px 32px rgba(0,212,170,0.15);transform:translateY(-3px)}
+.card .value{font-weight:800;letter-spacing:-1px}
+/* Better hero section */
+.hero-welcome{background:linear-gradient(145deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);border:1px solid #1e2d3d;box-shadow:0 0 60px rgba(0,212,170,0.05),inset 0 1px 0 rgba(255,255,255,0.05);border-radius:20px;padding:36px}
+.hero-welcome h2{font-size:28px;font-weight:800;letter-spacing:-0.5px}
+/* Better buttons */
+.btn-primary{background:linear-gradient(135deg,var(--accent) 0%,#0099ff 100%);box-shadow:0 4px 16px rgba(0,212,170,0.3);font-weight:700;letter-spacing:0.3px;border-radius:10px}
+.btn-primary:hover{box-shadow:0 6px 24px rgba(0,212,170,0.5);transform:translateY(-2px)}
+.btn-danger{background:linear-gradient(135deg,#ff4757,#ff6b81);box-shadow:0 4px 16px rgba(255,71,87,0.3);border-radius:10px}
+.btn-outline{border:1px solid #2d4a5e;border-radius:10px;backdrop-filter:blur(4px)}
+.btn-outline:hover{border-color:var(--accent);background:rgba(0,212,170,0.05)}
+/* Enhanced tabs */
+.tabs{background:linear-gradient(180deg,#0d1420,#111827);border-bottom:1px solid #1e2d3d50;padding:0 16px;gap:4px}
+.tab{padding:14px 18px;font-weight:500;font-size:12.5px;letter-spacing:0.3px;border-radius:8px 8px 0 0;transition:all 0.3s}
+.tab:hover{background:rgba(0,212,170,0.05);color:var(--accent)}
+.tab.active{color:var(--accent);background:rgba(0,212,170,0.08);font-weight:700}
+/* Better log box */
+.log-box{background:linear-gradient(180deg,#080c14,#0d1117);border:1px solid #1e2d3d60;border-radius:12px;font-size:11.5px;line-height:1.9}
+/* Badge improvements */
+.badge{font-weight:700;letter-spacing:0.5px;font-size:10px;padding:5px 14px;border-radius:24px}
+.badge-live{box-shadow:0 0 12px rgba(0,212,170,0.3)}
+/* Improved table */
+table{border-radius:8px;overflow:hidden}
+th{background:#0d1420;color:var(--accent);font-weight:700;font-size:10px;letter-spacing:1.5px;padding:12px 14px;border-bottom:2px solid var(--accent)20}
+td{padding:10px 14px;font-size:12px;border-bottom:1px solid #1e2d3d30}
+tr:hover td{background:rgba(0,212,170,0.04)}
+/* Improved sponsor cards */
+.sponsor-card{background:linear-gradient(145deg,#0d1117,#111827);border:1px solid #1e2d3d;border-radius:14px;padding:20px;transition:all 0.4s}
+.sponsor-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.4)}
+/* Better footer */
+.footer{background:linear-gradient(180deg,#0a0e17,#060910);border-top:2px solid;border-image:linear-gradient(90deg,var(--accent),#7c3aed,#0099ff) 1;padding:24px;text-align:center;color:var(--sub);font-size:12px}
+/* Session bar */
+.session-bar{background:linear-gradient(90deg,#080c14,#0d1520);border-bottom:1px solid #1e2d3d30;padding:8px 20px;font-size:11px;backdrop-filter:blur(10px)}
+/* Controls bar */
+.controls-bar{gap:12px;padding:4px 0}
+.select-styled{background:linear-gradient(145deg,#111827,#0d1420);border:1px solid #1e2d3d;border-radius:10px;padding:10px 16px;font-weight:500}
+/* Risk bar improvements */
+.risk-bar{height:10px;border-radius:5px;background:#0d1420;box-shadow:inset 0 2px 4px rgba(0,0,0,0.3)}
+.risk-fill{border-radius:5px;box-shadow:0 2px 8px rgba(0,212,170,0.3)}
+/* ERC flow improvements */
+.erc-flow{background:linear-gradient(145deg,#0d1117,#111827);border-radius:12px;border:1px solid #1e2d3d;padding:20px}
+.erc-step{border-radius:10px;padding:10px 16px;font-weight:600}
+/* Quick start banner */
+.quick-start{border:1px solid rgba(0,212,170,0.2);border-radius:14px;background:linear-gradient(135deg,#0f172a,#1a2332);box-shadow:0 4px 20px rgba(0,212,170,0.05)}
+/* How it works */
+.how-step{border-radius:14px;padding:20px 10px;transition:all 0.3s}
+.how-step:hover{border-color:var(--accent);transform:translateY(-4px)}
+.how-step .step-icon{font-size:32px;margin-bottom:10px}
+/* Better modal */
+.modal{background:linear-gradient(145deg,#111827,#0d1420);border:1px solid #1e2d3d;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);padding:36px}
+.modal h2{font-size:22px;font-weight:800}
+/* Improved feedback */
+.feedback-btn{background:linear-gradient(135deg,var(--accent),#0099ff);box-shadow:0 6px 24px rgba(0,212,170,0.4);border-radius:16px;width:52px;height:52px}
+.feedback-panel{background:linear-gradient(145deg,#111827,#0d1420);border:1px solid #1e2d3d;border-radius:16px;box-shadow:0 16px 48px rgba(0,0,0,0.5)}
+/* Auth modal improvements */
+.auth-tab{border-radius:8px;padding:10px 20px;font-weight:600;transition:all 0.3s}
+/* Subtle background pattern */
+body{background:#0a0e17;background-image:radial-gradient(circle at 20% 50%,rgba(0,212,170,0.02) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(124,58,237,0.02) 0%,transparent 50%),radial-gradient(circle at 50% 80%,rgba(0,153,255,0.02) 0%,transparent 50%)}
+/* Improved chain badge */
+.chain-badge{border-radius:10px;font-weight:700;padding:6px 14px}
+/* Better defi card */
+.defi-card{background:linear-gradient(145deg,#1a1a2e,#16213e);border:1px solid #2d3a5480;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.defi-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+/* Business section */
+.biz-section{background:linear-gradient(145deg,#111827,#0d1420);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.2)}
+/* Animated gradient underline for active elements */
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.tab.active::after{background:linear-gradient(90deg,var(--accent),#0099ff,#7c3aed,var(--accent));background-size:300% 100%;animation:gradientShift 3s ease infinite;height:3px;width:70%;border-radius:2px}
+
 /* Onboarding Modal */ .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)} .modal-overlay.hidden{display:none} .modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;position:relative;animation:slideIn 0.3s ease} .modal h2{font-size:20px;margin-bottom:16px;background:linear-gradient(90deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent} .modal p{color:var(--sub);font-size:13px;line-height:1.6;margin-bottom:12px} .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer} .modal-close:hover{color:var(--text)} .step-list{list-style:none;padding:0;margin:16px 0} .step-list li{padding:12px 16px;margin:8px 0;background:#0d1117;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:12px;font-size:13px} .step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--blue));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0} /* Feedback Widget */ .feedback-btn{position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,var(--accent),var(--blue));color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:24px;cursor:pointer;z-index:999;box-shadow:0 4px 20px rgba(0,212,170,0.4);transition:all 0.3s} .feedback-btn:hover{transform:scale(1.1);box-shadow:0 6px 30px rgba(0,212,170,0.6)} .feedback-panel{position:fixed;bottom:90px;right:24px;width:360px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;z-index:999;box-shadow:0 10px 40px rgba(0,0,0,0.5);animation:slideIn 0.3s ease} .feedback-panel.hidden{display:none} .feedback-panel h3{font-size:14px;margin-bottom:12px;color:var(--accent)} .feedback-panel textarea{width:100%;height:80px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:inherit;font-size:12px;resize:vertical} .feedback-panel select{width:100%;padding:8px;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;margin-bottom:10px} .rating-stars{display:flex;gap:6px;margin:10px 0} .rating-stars span{font-size:24px;cursor:pointer;transition:all 0.2s} .rating-stars span:hover,.rating-stars span.active{color:var(--danger);transform:scale(1.2)} /* Session Bar */ .session-bar{background:linear-gradient(90deg,#0d1117,#111827);border-bottom:1px solid var(--border);padding:6px 20px;display:flex;justify-content:space-between;font-size:11px;color:var(--sub)} .session-bar .session-item{display:flex;align-items:center;gap:6px} /* Admin Panel */ .admin-card{background:#0d1117;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px} .admin-card h4{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--sub);margin-bottom:10px} .admin-toggle{display:flex;align-items:center;gap:10px;margin:8px 0} .admin-toggle label{font-size:12px;color:var(--sub)} .toggle-switch{position:relative;width:40px;height:22px;background:#1e2d3d;border-radius:11px;cursor:pointer;transition:all 0.3s} .toggle-switch.on{background:var(--accent)} .toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:all 0.3s} .toggle-switch.on::after{left:21px} .admin-stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e2d3d20;font-size:12px} .admin-stat .label{color:var(--sub)} .admin-stat .val{color:var(--text);font-weight:600} /* How It Works */ .how-it-works{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:16px 0} .how-step{text-align:center;padding:16px 8px;background:#0d1117;border:1px solid var(--border);border-radius:10px;position:relative} .how-step .step-icon{font-size:28px;margin-bottom:8px} .how-step .step-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px} .how-step .step-desc{font-size:10px;color:var(--sub)} .how-arrow{position:absolute;right:-18px;top:50%;color:var(--sub);font-size:16px} /* Quick Start Banner */ .quick-start{background:linear-gradient(135deg,#0f172a,#1a2332);border:1px solid #00d4aa30;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between} .quick-start .qs-text{font-size:13px;color:var(--sub)} .quick-start .qs-text strong{color:var(--accent)} @media(max-width:768px){.grid{grid-template-columns:1fr 1fr}.grid-2,.grid-3{grid-template-columns:1fr}.header{flex-direction:column;gap:12px}.tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}.how-it-works{grid-template-columns:1fr}.feedback-panel{width:calc(100% - 48px)}} @media(max-width:480px){.grid{grid-template-columns:1fr}.card .value{font-size:24px}} </style>
 </head>
 <body>
